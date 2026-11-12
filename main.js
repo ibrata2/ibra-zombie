@@ -2,7 +2,7 @@ const { app, BrowserWindow, shell, ipcMain, Menu } = require('electron');
 const path = require('path');
 
 const shotsArg = process.argv.find(a => a.startsWith('--shots='));
-if (shotsArg) app.disableHardwareAcceleration();
+if (shotsArg) { app.commandLine.appendSwitch('use-angle', 'swiftshader'); app.commandLine.appendSwitch('enable-unsafe-swiftshader'); app.commandLine.appendSwitch('ignore-gpu-blocklist'); }
 
 let win;
 function create() {

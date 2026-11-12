@@ -218,7 +218,7 @@ const View3D = (() => {
     const night = setTime(G.time % 24, lst);
     flash.intensity = play && night ? (G.inVeh >= 0 ? 2.2 : 1.5) : 0; flash.distance = G.inVeh >= 0 ? 15 : 10; flash.position.set(G.x / 16, 1.6, G.y / 16);
     mallL.intensity = play && night && G.flags.gen ? 1.6 : 0; homeL.intensity = play && night && G.shel.gen ? 1.3 : 0;
-    renderer.render(scene, cam);
+    if (!window.__noRender) renderer.render(scene, cam);
   }
   const v3 = new THREE.Vector3();
   function project(x, y, h) { v3.set(x / 16, h || 0, y / 16).project(cam); return { x: (v3.x + 1) / 2 * innerWidth, y: (1 - v3.y) / 2 * innerHeight }; }
@@ -229,6 +229,6 @@ const View3D = (() => {
   // camera turns to stay behind the heading (h = atan2(dx, dz)); walking toward the camera does not flip it
   function follow(h, dt, rate) { let d = h + Math.PI - YAW; d = Math.atan2(Math.sin(d), Math.cos(d)); if (Math.abs(d) > 2.2) return; const m = rate * dt; YAW += Math.max(-m, Math.min(m, d * Math.min(1, dt * 3) * 1.4)); }
   const resetYaw = () => { YAW = 0.62; };
-  const toWorld = (ix, iy) => [ix * Math.cos(YAW) + iy * Math.sin(YAW), -ix * Math.sin(YAW) + iy * Math.cos(YAW)];
+  const toWorld = (ix, iy) => window.__flat ? [ix, iy] : [ix * Math.cos(YAW) + iy * Math.sin(YAW), -ix * Math.sin(YAW) + iy * Math.cos(YAW)];
   return { init, build, resize, frame, project, pick, toWorld, follow, resetYaw };
 })();

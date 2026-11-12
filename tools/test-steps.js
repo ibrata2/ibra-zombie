@@ -1,11 +1,11 @@
 // Automated story playthrough: drives every script path and reports errors.
 const A = "const Z=__iz,G=Z.G,S=Z.S,R=Z.R,W=Z.World;const w=ms=>new Promise(r=>setTimeout(r,ms));const log=[];const ok=(c,m)=>{if(!c)log.push('FAIL '+m)};";
 module.exports = [
-  { js: "window.__auto=setInterval(()=>{const R=__iz.R;if(R.nbAny)R.nbAny();else if(R.dlgNum)R.dlgNum(window.__pick||0);else if(R.dlgAny)R.dlgAny();},60); window.onerror=(m,s,l)=>console.error('ONERROR',m,l); await __iz.startNew('تجربة', false); return 'started'", wait: 1500 },
+  { js: "window.__auto=setInterval(()=>{const R=__iz.R;if(R.nbAny)R.nbAny();else if(R.dlgNum)R.dlgNum(window.__pick||0);else if(R.dlgAny)R.dlgAny();},60); window.__noRender=1;window.__flat=1;window.__izFast();window.onerror=(m,s,l)=>console.error('ONERROR',m,l); const pr=__iz.startNew('تجربة', false); await new Promise(r=>setTimeout(r,1500)); if(__iz.R.lapse)__iz.R.lapse.finish(); await pr; __iz.G.camFollow=0; return 'started'", wait: 1500 },
   { name: 't1', js: A + `
     const pipe=W.pickups.find(p=>p.id==='pipe'); G.x=pipe.x;G.y=pipe.y; await w(300); ok(R.near,'near pipe'); R.near.act(); await w(200); ok(G.weps.pipe>0,'pipe');
     const h=R.zombies.find(z=>z.type==='hassan'); ok(h,'hassan exists'); G.x=h.x+14;G.y=h.y; R.mouse.t=0; await w(200);
-    for(let i=0;i<40&&!G.flags.hassan;i++){const hz=R.zombies.find(z=>z.type==='hassan');if(!hz)break;G.x=hz.x+12;G.y=hz.y;R.keys.Space=true;G.dir=1;await w(120)} R.keys.Space=false; ok(G.flags.hassan,'hassan dead'); G.hp=100;
+    for(let i=0;i<40&&!G.flags.hassan;i++){const hz=R.zombies.find(z=>z.type==='hassan');if(!hz)break;G.x=hz.x+12;G.y=hz.y;R.keys.Space=true;G.dir=1;R.aim=Math.PI;await w(120)} R.keys.Space=false; ok(G.flags.hassan,'hassan dead'); G.hp=100;
     const cs=W.containers.filter(c=>c.zone===0&&c.b).slice(0,4); for(const c of cs){G.x=c.x;G.y=c.y+14;await w(150); ok(R.near,'near cont '+c.kind); if(R.near)R.near.act(); await w(100)} ok(G.lootN>=3,'looted '+G.lootN);
     return log.join(' | ')||'t1 ok '+JSON.stringify(G.inv)` , wait: 300 },
   { name: 't2', js: A + `
@@ -31,7 +31,7 @@ module.exports = [
     G.x=S.radio.x;G.y=S.radio.y+16; await w(300); ok(R.near,'near radio'); R.near&&R.near.act(); await w(1500); ok(G.flags.radio,'radio');
     return log.join(' | ')||'t3 ok npcs='+R.npcs.map(n=>n.id+(n.follow?'*':'')).join(',')`, wait: 300 },
   { name: 't4', js: A + `
-    const c=R.zombies.find(z=>z.type==='colonel'); ok(c,'colonel'); c.hp=1; G.x=c.x+12;G.y=c.y;G.dir=1;R.mouse.t=0;R.keys.Space=true; await w(1500); R.keys.Space=false; ok(G.flags.colonel,'colonel dead'); ok(G.inv.key_police,'police key'); G.hp=100;
+    const c=R.zombies.find(z=>z.type==='colonel'); ok(c,'colonel'); c.hp=1; G.x=c.x+12;G.y=c.y;G.dir=1;R.aim=Math.PI;R.mouse.t=0;R.keys.Space=true; await w(1500); R.keys.Space=false; ok(G.flags.colonel,'colonel dead'); ok(G.inv.key_police,'police key'); G.hp=100;
     G.x=S.policeDoor.x;G.y=S.policeDoor.y; await w(300); ok(R.near,'near police door'); R.near&&R.near.act(); await w(200); ok(G.flags.lk_police,'police open');
     const lk=W.containers.find(c=>c.fixed==='pistol'); G.x=lk.x;G.y=lk.y-14; await w(300); R.near&&R.near.act(); await w(200); ok(G.weps.pistol,'pistol'); 
     // fire pistol
@@ -57,7 +57,7 @@ module.exports = [
     G.x=S.armoryDoor.x;G.y=S.armoryDoor.y; await w(300); R.near&&R.near.act(); await w(200); ok(G.flags.lk_armory,'armory open');
     for(const f of ['rifle','truckkey','armoryammo']){const c=W.containers.find(c=>c.fixed===f); G.x=c.x;G.y=c.y+14; await w(250); ok(R.near,'near '+f); R.near&&R.near.act(); await w(150)} ok(G.weps.rifle,'rifle'); ok(G.inv.key_truck,'truck key');
     G.x=G.veh[4].x+12;G.y=G.veh[4].y+14; await w(200); Z.enterVeh(4); ok(G.inVeh===4,'in truck'); document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE',bubbles:true})); await w(200);
-    const boss=R.zombies.find(z=>z.type==='boss'); ok(boss,'boss'); G.x=boss.x-60;G.y=boss.y; R.mouse.t=0; G.dir=2; G.cur='rifle'; R.keys.Space=true; for(let i=0;i<120&&!G.flags.boss;i++){G.hp=100; const b=R.zombies.find(z=>z.type==='boss'); if(b){G.x=b.x-50;G.y=b.y;G.dir=2;} await w(100)} R.keys.Space=false; ok(G.flags.boss,'boss dead');
+    const boss=R.zombies.find(z=>z.type==='boss'); ok(boss,'boss'); G.x=boss.x-60;G.y=boss.y; R.mouse.t=0; G.dir=2;R.aim=0; G.cur='rifle'; R.keys.Space=true; for(let i=0;i<120&&!G.flags.boss;i++){G.hp=100; const b=R.zombies.find(z=>z.type==='boss'); if(b){G.x=b.x-50;G.y=b.y;G.dir=2;R.aim=0;} await w(100)} R.keys.Space=false; ok(G.flags.boss,'boss dead');
     G.x=S.wareDoor.x+8;G.y=S.wareDoor.y; await w(300); ok(R.near,'near ware door'); R.near&&R.near.act(); await w(200); ok(G.flags.lk_warehouse,'ware open');
     return log.join(' | ')||'t5 ok kills='+G.kills`, wait: 300 },
   { name: 't6', js: A + `

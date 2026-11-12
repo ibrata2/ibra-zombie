@@ -1,7 +1,7 @@
 // IBRA ZOMBIE - isometric 3D view (Three.js): sun shadows by time of day, street lamps at night.
 // World units: 1 unit = 1 tile (16 game px). X = east, Z = south, Y = up.
 const View3D = (() => {
-  const YAW = 0.62, PITCH = 0.86, W = World.W, H = World.H, I = World.I, T = World.tiles;
+  let YAW = 0.62; const PITCH = 0.9, W = World.W, H = World.H, I = World.I, T = World.tiles;
   let renderer, scene, cam, sun, hemi, flash, mallL, homeL, wreckG, view = 11, rnd, t = 0; const xcars = new Map();
   const tgt = new THREE.Vector3(), lampLights = [], lamps = [], bld = [], gates = {}, picks = [], figs = new Map(), vehs = [];
   const rr = (a, b) => a + rnd() * (b - a);
@@ -226,6 +226,9 @@ const View3D = (() => {
     v3.set(mx / innerWidth * 2 - 1, 1 - my / innerHeight * 2, -1).unproject(cam); const d = cam.getWorldDirection(new THREE.Vector3()), k = -v3.y / d.y; return { x: (v3.x + d.x * k) * 16, y: (v3.z + d.z * k) * 16 };
   }
   // screen-space input (right, down) -> world direction
+  // camera turns to stay behind the heading (h = atan2(dx, dz)); walking toward the camera does not flip it
+  function follow(h, dt, rate) { let d = h + Math.PI - YAW; d = Math.atan2(Math.sin(d), Math.cos(d)); if (Math.abs(d) > 2.2) return; const m = rate * dt; YAW += Math.max(-m, Math.min(m, d * Math.min(1, dt * 3) * 1.4)); }
+  const resetYaw = () => { YAW = 0.62; };
   const toWorld = (ix, iy) => [ix * Math.cos(YAW) + iy * Math.sin(YAW), -ix * Math.sin(YAW) + iy * Math.cos(YAW)];
-  return { init, build, resize, frame, project, pick, toWorld };
+  return { init, build, resize, frame, project, pick, toWorld, follow, resetYaw };
 })();

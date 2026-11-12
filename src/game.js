@@ -397,6 +397,7 @@ function updPlayer(dt) {
   const pk = View3D.pick(R.mouse.x, R.mouse.y), wx = pk.x, wy = pk.y;
   if (R.mouse.r) { const dx = wx - G.x, dy = wy - G.y, d = hyp(dx, dy); if (d > 6) { ix = dx / d; iy = dy / d; } }
   const m = hyp(ix, iy); if (m > 1) { ix /= m; iy /= m; }
+  if (G.camFollow !== 0) { if (G.inVeh >= 0) { const v = G.veh[G.inVeh]; if (v.sp > 25) View3D.follow(Math.PI / 2 - v.a, dt, 1.5); } else if (m > 0 && !R.mouse.r) View3D.follow(Math.atan2(ix, iy), dt, 1.1); }
   if (G.inVeh >= 0) { updVeh(dt, ix, iy, m); return; }
   if (R.mouse.t > 0) R.aim = Math.atan2(wy - G.y, wx - G.x);
   const run = (k.ShiftLeft || k.ShiftRight) && G.en > 0 && m > 0;
@@ -740,7 +741,7 @@ function introLapse() {
       civ.push({ x: rand(3 * 16, 54 * 16), y: rows[i % 2 === 0 ? 0 : (i % 4 === 1 ? 1 : (i % 8 === 3 ? 2 : 1))] + rand(-5, 5), d: i % 2 ? 1 : -1, sp: rand(34, 52), z: 0, fall: 0, hide: false, night: i % 3 !== 0, turn: rand(29.55, 30.25),
         look: { id: 'cv' + i, skin: ['#c99870', '#b98860', '#d8a880'][i % 3], shirt: robe ? null : c, robe: robe ? ['#e9e4d6', '#8a7a5a', '#16161a'][i % 3] : null, pants: '#2c2f36', hair: '#1b1410', hat: i % 7 === 0 ? 'hijab' : (robe && i % 2 ? 'shemagh' : null), hatc: i % 7 === 0 ? ['#16161a', '#8e3b5e', '#3a5a8a'][i % 3] : '#ececec', fat: i % 9 === 0 } }); }
     for (let i = 0; i < 9; i++) { const east = i % 2 === 0; cars.push({ t: ['saipa', 'kia', 'saipa'][i % 3], col: ['#c9a02a', '#d9d8d2', '#8a8f96', '#5a6f8a', '#a8322a', '#c9a02a'][i % 6], x: rand(2 * 16, 54 * 16), y: (east ? 56 : 54) * 16 + (east ? 12 : 12), a: east ? 0 : Math.PI, sp: rand(150, 230), east, night: i % 3 !== 0, crash: rand(29.6, 30.15), hide: false }); }
-    R.lapse = L; R.mode = 'intro'; $('#hud').hidden = true; const lp = $('#lapse'); lp.hidden = false; G.time = L.t; R.cam.x = hx + 60; R.cam.y = 56 * 16; R.cam.z = 2.4;
+    View3D.resetYaw(); R.lapse = L; R.mode = 'intro'; $('#hud').hidden = true; const lp = $('#lapse'); lp.hidden = false; G.time = L.t; R.cam.x = hx + 60; R.cam.y = 56 * 16; R.cam.z = 2.4;
     L.finish = () => { if (L.done) return; L.done = true; $('#fade').classList.add('on'); setTimeout(() => { R.lapse = null; lp.hidden = true; G.time = 6.4; R.cam.x = G.x; R.cam.y = G.y; R.cam.z = 3; spawnAll(); R.mode = 'play'; $('#hud').hidden = false; hud(); $('#fade').classList.remove('on'); res(); }, 700); };
   });
 }
@@ -914,7 +915,7 @@ function mapPanel() {
 }
 function controlsPanel() {
   return openPanel(tr('التحكم', 'Controls'), box => {
-    const rows = [['W A S D  /  ↑ ← ↓ →', tr('الحركة والسياقة (نفس الأزرار)', 'Move and drive (same keys)')], ['Shift', tr('ركض', 'Run')], [tr('الماوس', 'Mouse'), tr('تصويب — الزر الأيسر ضرب/إطلاق', 'Aim — left button attacks / fires')], [tr('الزر الأيمن (ضغط مستمر)', 'Right button (hold)'), tr('امشي/سوق باتجاه المؤشر', 'Walk / drive toward the cursor')], ['Space', tr('ضرب (بالكيبورد)', 'Attack (keyboard)')], [tr('عجلة الماوس', 'Mouse wheel'), tr('تقريب وتبعيد الكاميرا', 'Camera zoom in / out')], ['C', tr('رجّع الكاميرا للوضع الطبيعي', 'Reset the camera')], ['E', tr('تفاعل / اركب / انزل / احچي', 'Interact / get on / get off / talk')], ['Q', tr('بدّل السلاح', 'Switch weapon')], ['F', tr('أكل وشرب سريع', 'Quick eat / drink')], ['X', tr('علاج سريع', 'Quick heal')], ['H', tr('هورن (بالسيارة)', 'Horn (in a vehicle)')], ['I  /  Tab', tr('الحقيبة', 'Bag')], ['M', tr('الخريطة', 'Map')], ['F5', tr('حفظ يدوي', 'Manual save')], ['F11', tr('ملء الشاشة', 'Fullscreen')], ['Esc', tr('القائمة', 'Menu')]];
+    const rows = [['W A S D  /  ↑ ← ↓ →', tr('الحركة والسياقة (نفس الأزرار)', 'Move and drive (same keys)')], ['Shift', tr('ركض', 'Run')], [tr('الماوس', 'Mouse'), tr('تصويب — الزر الأيسر ضرب/إطلاق', 'Aim — left button attacks / fires')], [tr('الزر الأيمن (ضغط مستمر)', 'Right button (hold)'), tr('امشي/سوق باتجاه المؤشر', 'Walk / drive toward the cursor')], ['Space', tr('ضرب (بالكيبورد)', 'Attack (keyboard)')], [tr('عجلة الماوس', 'Mouse wheel'), tr('تقريب وتبعيد الكاميرا', 'Camera zoom in / out')], ['C', tr('رجّع الكاميرا للوضع الطبيعي', 'Reset the camera')], ['V', tr('الكاميرا: تدور ويه اتجاهك / ثابتة', 'Camera: follow your direction / fixed')], ['E', tr('تفاعل / اركب / انزل / احچي', 'Interact / get on / get off / talk')], ['Q', tr('بدّل السلاح', 'Switch weapon')], ['F', tr('أكل وشرب سريع', 'Quick eat / drink')], ['X', tr('علاج سريع', 'Quick heal')], ['H', tr('هورن (بالسيارة)', 'Horn (in a vehicle)')], ['I  /  Tab', tr('الحقيبة', 'Bag')], ['M', tr('الخريطة', 'Map')], ['F5', tr('حفظ يدوي', 'Manual save')], ['F11', tr('ملء الشاشة', 'Fullscreen')], ['Esc', tr('القائمة', 'Menu')]];
     const t = el('table'); for (const r of rows) { const row = el('tr'); row.append(el('td', r[0]), el('td', r[1])); t.appendChild(row); } box.appendChild(t);
     box.appendChild(el('p', tr('الحفظ التلقائي يصير من تدخل مكان آمن (البيت، المول) ومن تنام.', 'Autosave happens when you enter a safe place (home, mall) and when you sleep.')));
   });
@@ -941,7 +942,7 @@ function pauseMenu() {
   });
 }
 function setLang(l) { LANG = l; localStorage.setItem('ibz_lang', l); document.documentElement.lang = l; document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr'; if (R.mode === 'title') renderMenu(); else hud(); }
-function toTitle() { R.mode = 'title'; World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); R.npcs = []; R.bubbles.length = 0; $('#hud').hidden = true; $('#menu').hidden = false; renderMenu(); }
+function toTitle() { R.mode = 'title'; View3D.resetYaw(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); R.npcs = []; R.bubbles.length = 0; $('#hud').hidden = true; $('#menu').hidden = false; renderMenu(); }
 function renderMenu() {
   document.documentElement.lang = LANG; document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
   $('#sub').textContent = tr('صحيت لكيت الدنيا زومبي', 'Woke Up to a Zombie World'); const m = $('#mbtns'); m.innerHTML = ''; const u = users();
@@ -991,7 +992,7 @@ addEventListener('keydown', e => {
   if (e.repeat || R.busy > 0) return;
   switch (k) {
     case 'Escape': pauseMenu(); break; case 'KeyE': interact(); break; case 'KeyI': case 'Tab': invPanel(); break; case 'KeyM': mapPanel(); break;
-    case 'KeyQ': cycleWeapon(); break; case 'KeyC': G.zoom = 3; break; case 'KeyH': horn(); break; case 'F5': save(false); break; case 'KeyF': quick('eat'); break; case 'KeyX': quick('heal'); break;
+    case 'KeyQ': cycleWeapon(); break; case 'KeyC': G.zoom = 3; View3D.resetYaw(); break; case 'KeyV': G.camFollow = G.camFollow === 0 ? 1 : 0; if (!G.camFollow) View3D.resetYaw(); toast(G.camFollow ? tr('الكاميرا تدور ويه اتجاهك', 'Camera follows your direction') : tr('الكاميرا ثابتة', 'Camera fixed')); break; case 'KeyH': horn(); break; case 'F5': save(false); break; case 'KeyF': quick('eat'); break; case 'KeyX': quick('heal'); break;
   }
 });
 addEventListener('keyup', e => { R.keys[e.code] = false; });

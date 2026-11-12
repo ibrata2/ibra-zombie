@@ -1,0 +1,55 @@
+{
+  "name": "ibra-zombie",
+  "productName": "IBRA ZOMBIE",
+  "version": "1.0.0",
+  "description": "IBRA ZOMBIE - صحيت لكيت الدنيا زومبي: لعبة بقاء بكسل فكاهية ببغداد",
+  "author": "Ibrahim Al-Khazraji",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node tools/make-icon.js",
+    "shots": "electron . --shots=docs/screenshots",
+    "dist": "node tools/build-installer.js"
+  },
+  "build": {
+    "appId": "com.ibraprogram.ibrazombie",
+    "productName": "IBRA ZOMBIE",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "build/icon.png"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "afterPack": "tools/after-pack.js"
+  },
+  "devDependencies": {
+    "@fontsource/aref-ruqaa": "^5.3.0",
+    "@fontsource/handjet": "^5.3.1",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^2.1.8",
+    "pngjs": "^7.0.0",
+    "resedit": "^3.1.0",
+    "three": "^0.149.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ibrata2/ibra-zombie.git"
+  }
+}

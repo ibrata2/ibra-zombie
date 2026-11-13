@@ -2,7 +2,7 @@
 // World units: 1 unit = 1 tile (16 game px). X = east, Z = south, Y = up.
 const View3D = (() => {
   let YAW = 0.62; const PITCH = 0.9, W = World.W, H = World.H, I = World.I, T = World.tiles;
-  let renderer, scene, cam, sun, hemi, flash, mallL, homeL, wreckG, view = 11, rnd, t = 0; const xcars = new Map();
+  let renderer, scene, cam, sun, hemi, flash, mallL, homeL, wreckG, beam, view = 11, rnd, t = 0; const xcars = new Map();
   const tgt = new THREE.Vector3(), lampLights = [], lamps = [], bld = [], gates = {}, picks = [], figs = new Map(), vehs = [];
   const rr = (a, b) => a + rnd() * (b - a);
   const mats = {}; const M = (color, o) => { const k = color + (o ? JSON.stringify(o) : ''); return mats[k] || (mats[k] = new THREE.MeshStandardMaterial(Object.assign({ color, roughness: .92, metalness: 0 }, o))); };
@@ -114,6 +114,7 @@ const View3D = (() => {
     // lights
     sun = new THREE.DirectionalLight(0xffffff, 1); sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; hemi = new THREE.HemisphereLight(0xbcd0e6, 0x8a7a5a, .5); scene.add(sun, sun.target, hemi);
     for (let i = 0; i < 5; i++) { const l = new THREE.SpotLight(0xffe2b0, 0, 16, .95, .7, 1.2); l.castShadow = i < 2; l.shadow.mapSize.set(1024, 1024); scene.add(l, l.target); lampLights.push(l); }
+    beam = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, 16, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd966, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide })); beam.visible = false; scene.add(beam);
     flash = new THREE.PointLight(0xfff0d0, 0, 11, 1.4); mallL = new THREE.PointLight(0xfff2d8, 0, 18, 1.2); homeL = new THREE.PointLight(0xffe2b0, 0, 12, 1.2); scene.add(flash, mallL, homeL);
     mallL.position.set(World.spots.mall.x / 16, 3, World.spots.mall.y / 16); homeL.position.set(World.spots.home.x / 16, 2.4, World.spots.home.y / 16);
   }
@@ -215,6 +216,7 @@ const View3D = (() => {
       for (const c of R.lapse.cars) { let o = xcars.get(c); if (!o) { o = { g: car(c.t, 0, false) }; if (c.col) o.g.children[0].material = new THREE.MeshStandardMaterial({ color: c.col, roughness: .5, metalness: .3 }); xcars.set(c, o); scene.add(o.g); } o.used = true; o.g.visible = !c.hide; o.g.position.set(c.x / 16, 0, c.y / 16); o.g.rotation.y = -c.a; } }
     for (const [k, o] of xcars) if (!o.used) { scene.remove(o.g); xcars.delete(k); }
     for (const [k, f] of figs) if (!f.used) { scene.remove(f.g); figs.delete(k); }
+    beam.visible = play && !!R.objT && Math.hypot(R.objT.x - G.x, R.objT.y - G.y) > 40; if (beam.visible) { beam.position.set(R.objT.x / 16, 8, R.objT.y / 16); beam.material.opacity = .22 + Math.sin(t * 4) * .1; }
     const night = setTime(G.time % 24, lst);
     flash.intensity = play && night ? (G.inVeh >= 0 ? 2.2 : 1.5) : 0; flash.distance = G.inVeh >= 0 ? 15 : 10; flash.position.set(G.x / 16, 1.6, G.y / 16);
     mallL.intensity = play && night && G.flags.gen ? 1.6 : 0; homeL.intensity = play && night && G.shel.gen ? 1.3 : 0;

@@ -268,6 +268,11 @@ function syncNpcs() {
 function buildObjs() {
   const o = R.objs; o.length = 0;
   R.fuelC = World.containers.find(c => c.fixed === 'fuel');
+  const LB = { home: [['بيتك', 'Your home'], '#7fc24b'], mall: [['مول الكرادة — مكان آمن', 'Karrada Mall — safe place'], '#c9a84c'], booth: [['كابينة السيطرة', 'Checkpoint booth'], '#e8cf7a'], pharmacy: [['صيدلية', 'Pharmacy'], '#7fe0a0'], police: [['مركز الشرطة', 'Police station'], '#8fb0e8'], butcher: [['قصّاب', 'Butcher'], '#e08a7a'], bookshop: [['مكتبة المتنبي', 'Mutanabbi bookshop'], '#d8b98a'], armory: [['المشجب', 'Armory'], '#a8c070'], warehouse: [['مخزن المشروبات', 'Drinks warehouse'], '#e06a5a'] };
+  R.labels = World.buildings.filter(b => LB[b.type]).map(b => ({ b: b.i + 1, x: (b.x + b.w / 2) * 16, y: (b.y + b.h / 2) * 16, h: b.type === 'mall' ? 6.6 : b.type === 'warehouse' ? 5 : 3.4, t: LB[b.type][0], c: LB[b.type][1] }));
+  const mb = R.mini = Art.mk(World.W, World.H), mg = mb.getContext('2d'), MC = { 0: '#8f7f5c', 8: '#6f7a4c', 1: '#33343a', 2: '#77736a', 5: '#2f6068', 6: '#55565c', 7: '#1a1a1e', 10: '#555', 11: '#e3b62f' };
+  for (let y = 0; y < World.H; y++) for (let x = 0; x < World.W; x++) { mg.fillStyle = MC[World.tiles[World.I(x, y)]] || '#8f7f5c'; mg.fillRect(x, y, 1, 1); }
+  for (const b of World.buildings) { mg.fillStyle = LB[b.type] ? LB[b.type][1] : '#b3a88e'; mg.fillRect(b.x, b.y, b.w, b.h); }
   o.push({ x: S.homeBed.x, y: S.homeBed.y, label: ['نام', 'Sleep'], act: () => sleepAct(S.start) });
   o.push({ x: S.mallBed.x, y: S.mallBed.y, r: 30, label: ['نام', 'Sleep'], act: () => sleepAct({ x: S.mallBed.x, y: S.mallBed.y + 26 }) });
   o.push({ x: S.homeBench.x, y: S.homeBench.y, label: ['طوّر الملجأ', 'Upgrade shelter'], act: shelter });
@@ -783,16 +788,17 @@ function findNear() {
   R.near = best;
 }
 function interact() { if (R.busy > 0) return; if (G.inVeh >= 0) return exitVeh(); if (R.near) R.near.act(); }
+function nearestLoot() { let b = null, bd = 1e9; for (const c of World.containers) { if (G.looted[c.id] || !c.b || c.x > 56 * 16) continue; const d = hyp(c.x - G.x, c.y - G.y); if (d < bd) { bd = d; b = c; } } return b; }
 function objective() {
   const f = G.flags;
   if (f.ended) return [tr('عيش يومك.. وابقى عايش', 'Live your day... and stay alive'), null];
   if (!f.pipe) return [tr('اطلع من البيت ودوّر شي تدافع بيه عن نفسك', 'Leave the house and find something to defend yourself with'), S.pipe];
   if (!f.hassan) return [tr('أبو حسن واكف يم الباب.. تصرّف ويّاه', 'Abu Hassan is by the door... deal with him'), R.zombies.find(z => z.type === 'hassan') || S.hassan];
-  if (G.lootN < 3 && !f.ajMet) return [tr('دوّر أكل وماي ببيوت المحلة (' + G.lootN + '/3)', 'Search the neighborhood houses for food and water (' + G.lootN + '/3)'), null];
+  if (G.lootN < 3 && !f.ajMet) return [tr('ادخل البيوت وفتّش الثلاجات والكناتير (النقاط الصفرة) (' + G.lootN + '/3)', 'Enter houses and search fridges and cupboards (yellow dots) (' + G.lootN + '/3)'), R.needT || nearestLoot()];
   if (!f.ajMet) return [tr('امشِ عالشارع العام باتجاه السوق (شرق)', 'Follow the main road east toward the market'), S.aj];
   if (!f.g1) return has('fuel') ? [tr('رجّع البانزين لأبو جاسم', 'Bring the fuel to Abu Jasim'), S.aj] : [tr('لكي جليكان بانزين بسيارة متروكة', 'Find a fuel can in an abandoned car'), (R.fuelC && G.looted[R.fuelC.id]) ? null : S.fuelWreck];
-  if (!f.g2) return has('key_gate') ? [tr('افتح سيطرة الكرادة بالمفتاح', 'Open the Karrada checkpoint with the key'), S.g2] : [tr('دوّر مفتاح السيطرة بالكابينة آخر السوق', 'Find the checkpoint key in the booth at the end of the market'), S.booth];
-  if (!f.mall) return [tr('ادخل مول الكرادة', 'Enter the Karrada mall'), S.mallDoor];
+  if (!f.g2) return has('key_gate') ? [tr('افتح سيطرة الكرادة بالمفتاح', 'Open the Karrada checkpoint with the key'), S.g2] : [tr('امشِ شرق لآخر السوق.. المفتاح بكابينة السيطرة يم الصبّات (اتبع السهم الذهبي)', 'Go east to the end of the market... the key is in the checkpoint booth by the barrier (follow the gold arrow)'), S.booth];
+  if (!f.mall) return [tr('ادخل مول الكرادة: البناية الزرقة الكبيرة يسار الشارع بعد السيطرة', 'Enter the Karrada mall: the big blue building left of the road past the checkpoint'), S.mallDoor];
   if (!f.noorMet) return [tr('احچي ويه نور بالمول', 'Talk to Noor in the mall'), S.noor];
   if (!f.murHealed) return has('medicine') ? [tr('رجّع الدوه لنور', 'Bring the medicine to Noor'), S.noor] : [tr('جيب الدوه من الصيدلية كبال المول', 'Get the medicine from the pharmacy across the street'), S.pharm];
   if (!f.gen) return [tr('جمّع ٣ قطع غيار لمرتضى (' + (G.inv.parts || 0) + '/3)', 'Collect 3 spare parts for Murtadha (' + (G.inv.parts || 0) + '/3)'), has('parts', 3) || !f.murAsk ? S.mur : null];
@@ -845,6 +851,14 @@ function hud() {
   else { const d = WEAPONS[G.cur]; w.children[0].textContent = L(d.n); w.children[1].textContent = d.gun ? tr('رصاص: ', 'Ammo: ') + (G.inv[d.ammo] || 0) : d.dur ? tr('المتانة: ', 'Durability: ') + G.weps[G.cur] + '/' + d.dur : tr('[Q] بدّل السلاح', '[Q] switch weapon'); }
   const cb = $('#comps'), list = COMPS.filter(here); cb.hidden = !list.length;
   if (list.length) { cb.innerHTML = ''; for (const id of list) { const d = el('div'), t = comp(id).trust; d.append(el('span', L(NPC[id].n) + (comp(id).st === 'home' ? tr(' (بالملجأ)', ' (home)') : '')), el('em', Math.round(t) + '%', t < 25 ? 'bad' : '')); cb.appendChild(d); } }
+  // minimap
+  const mc = $('#mini'), mx = mc.getContext('2d'); mx.imageSmoothingEnabled = false; mx.drawImage(R.mini, 0, 0, mc.width, mc.height); const ms = mc.width / World.W / 16, dot = (o, c, r) => { mx.fillStyle = '#000'; mx.fillRect(o.x * ms - r - 1, o.y * ms - r - 1, r * 2 + 2, r * 2 + 2); mx.fillStyle = c; mx.fillRect(o.x * ms - r, o.y * ms - r, r * 2, r * 2); };
+  for (const k in World.gates) if (!World.gates[k].open) { mx.fillStyle = '#e3b62f'; mx.fillRect(World.gates[k].x * 16 * ms - 1, 52 * 16 * ms, 3, 8 * 16 * ms); }
+  G.veh.forEach(v => !v.gone && dot(v, '#6cc4ff', 2)); if (R.objT && Math.sin(R.t * 6) > -.4) dot(R.objT, '#ffe27a', 4); dot(G, '#fff', 3); dot(G, '#d24a3a', 1.5);
+  // nearest food / water when running low and the bag has none
+  R.needT = null; const lowW = G.water < 38 && !has('water') && !has('tea'), lowF = G.food < 38 && !FOODS.some(x => has(x)) && !has('dolma');
+  if (lowW || lowF) { const lim = (G.flags.g4 ? 999 : G.flags.g3 ? 177 : G.flags.g2 ? 150 : G.flags.g1 ? 104 : 56) * 16; let bd = 1e9; for (const c of World.containers) { if (G.looted[c.id] || c.x > lim || (c.kind !== 'fridge' && c.kind !== 'shelf')) continue; const d = hyp(c.x - G.x, c.y - G.y); if (d < bd) { bd = d; R.needT = c; } } if (R.needT) R.needT = { x: R.needT.x, y: R.needT.y, label: lowW ? tr('أقرب ماي وأكل', 'Nearest water & food') : tr('أقرب أكل', 'Nearest food') }; }
+  else if ((G.water < 38 || G.food < 38)) tip('eatF' + G.day, 'عندك أكل أو ماي بالحقيبة.. اضغط F.', 'You have food or water in your bag... press F.');
   const p = $('#prompt'); if (G.inVeh >= 0) { p.hidden = false; p.innerHTML = '<kbd>E</kbd>' + tr('انزل', 'Get off'); } else if (R.near && R.busy === 0) { p.hidden = false; p.innerHTML = '<kbd>E</kbd>'; p.append(R.near.label); } else p.hidden = true;
 }
 
@@ -878,14 +892,18 @@ function render() {
     ctx.globalAlpha = Math.min(1, b.t * 3); ctx.fillStyle = '#000'; ctx.fillRect(bx - tw / 2 - 2, by - 13, tw + 4, 26); ctx.fillStyle = e.s ? '#dfeccf' : '#fff'; ctx.fillRect(bx - tw / 2, by - 11, tw, 22); ctx.fillStyle = '#000'; ctx.fillRect(bx - 3, by + 11, 6, 3);
     ctx.fillStyle = e.s ? '#24401a' : '#16161c'; ctx.fillText(b.text, bx, by + 1); ctx.globalAlpha = 1;
   }
-  if (play && R.objT && R.busy === 0) {
-    const p = View3D.project(R.objT.x, R.objT.y, 1), tx = p.x, ty = p.y;
-    if (tx < 30 || tx > w - 30 || ty < 60 || ty > h - 60) {
-      const a = Math.atan2(ty - h / 2, tx - w / 2), ex = clamp(w / 2 + Math.cos(a) * w, 46, w - 46), ey = clamp(h / 2 + Math.sin(a) * w, 110, h - 120);
-      ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-12, -15); ctx.lineTo(-12, 15); ctx.fill(); ctx.fillStyle = '#e8cf7a'; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -10); ctx.lineTo(-8, 10); ctx.fill(); ctx.restore();
-      ctx.fillStyle = '#000'; ctx.direction = 'ltr'; const dm = Math.round(hyp(R.objT.x - G.x, R.objT.y - G.y) / 16) + 'm'; ctx.fillText(dm, ex + 1, ey + 27); ctx.fillStyle = '#e8cf7a'; ctx.fillText(dm, ex, ey + 26);
-    }
+  if (play) {
+    // names over the important buildings
+    ctx.font = '700 18px Handjet, Tahoma, sans-serif'; ctx.direction = LANG === 'ar' ? 'rtl' : 'ltr';
+    for (const l of R.labels) { if (l.b === pb || Math.abs(l.x - G.x) > 520 || Math.abs(l.y - G.y) > 520) continue; const p = View3D.project(l.x, l.y, l.h), t = L(l.t), tw = ctx.measureText(t).width + 16; ctx.fillStyle = 'rgba(8,8,12,.82)'; ctx.fillRect(p.x - tw / 2, p.y - 13, tw, 26); ctx.fillStyle = l.c; ctx.fillRect(p.x - tw / 2, p.y + 11, tw, 2); ctx.fillText(t, p.x, p.y + 1); }
+    if (R.busy === 0) { if (R.objT) guideArrow(R.objT, '#e8cf7a', tr('المهمة', 'Objective'), 96); if (R.needT) guideArrow(R.needT, '#6cc4ff', R.needT.label, 62); }
   }
+}
+function guideArrow(tg, col, label, rad) {
+  const w = cv.width, h = cv.height, p = View3D.project(tg.x, tg.y, 1), me = View3D.project(G.x, G.y, .6), dx = p.x - me.x, dy = p.y - me.y, d = hyp(dx, dy); if (d < rad + 60) return;
+  const a = Math.atan2(dy, dx), ex = clamp(me.x + Math.cos(a) * rad, 40, w - 40), ey = clamp(me.y + Math.sin(a) * rad, 40, h - 40), m = Math.round(hyp(tg.x - G.x, tg.y - G.y) / 16) + 'm';
+  ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(24, 0); ctx.lineTo(-12, -16); ctx.lineTo(-5, 0); ctx.lineTo(-12, 16); ctx.fill(); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-8, -11); ctx.lineTo(-2, 0); ctx.lineTo(-8, 11); ctx.fill(); ctx.restore();
+  ctx.font = '700 17px Handjet, Tahoma, sans-serif'; ctx.direction = LANG === 'ar' ? 'rtl' : 'ltr'; const t = label + ' ' + m, tx = ex - Math.cos(a) * 34, ty = ey - Math.sin(a) * 34 + 22; ctx.fillStyle = '#000'; ctx.fillText(t, tx + 1, ty + 1); ctx.fillStyle = col; ctx.fillText(t, tx, ty);
 }
 
 // ---------------------------------------------------------------- panels & menus

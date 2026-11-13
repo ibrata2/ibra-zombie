@@ -94,6 +94,7 @@ const World = (() => {
     b = addB(119, 36, 16, 17, 'S', 'mall', 4, 126); safeB(b); spots.mall = sp(126, 45); spots.mallDoor = sp(126, 53);
     inn(b, 'bed', 121, 37, 6); inn(b, 'bed', 123, 37, 6); spots.mallBed = { x: 122 * 16 + 8, y: 37 * 16 + 14 };
     inn(b, 'radio', 127, 37); spots.radio = sp(127, 37);
+    inn(b, 'desk', 124, 41); spots.board = sp(124, 41); spots.tunMall = sp(121, 50); spots.brMall = sp(123, 50); spots.tunMall2 = sp(125, 50); spots.tunHome = sp(23, 51); spots.brPharm = sp(125, 61); spots.tunArm = sp(194, 41);
     cont(b, 'shelf', 130, 37, 'mallfood'); cont(b, 'shelf', 132, 37); cont(b, 'crate', 133, 41);
     inn(b, 'bigen', 132, 50); block[I(131, 50)] = 1; spots.mallGen = sp(132, 50);
     inn(b, 'bench', 132, 46); spots.mallBench = sp(132, 46);

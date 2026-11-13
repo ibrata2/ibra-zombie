@@ -230,7 +230,7 @@ function save(auto) {
 function blank(name) {
   const comps = {}; for (const id of COMPS) comps[id] = { st: 'none', trust: 50, joinDay: 0, asked: 0 };
   const veh = [['bike', 'bike', 0], ['stuta', 'stuta', 0], ['kia', 'kia', 0], ['saipa', 'saipa', 0], ['truck', 'truck', 70]].map(([t, s, f]) => ({ t, x: S[s].x, y: S[s].y, a: 0, sp: 0, fuel: f, hp: VEH[t].hp, up: { armor: 0, tank: 0, horn: 0, seats: 0 } }));
-  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, col: { pop: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
+  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, fac: { fuel: 0, food: 0, water: 0, med: 0, arms: 0 }, links: {}, col: { pop: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
 }
 function enterWorld() {
   World.gen(); View3D.build();
@@ -287,6 +287,8 @@ function buildObjs() {
   o.push({ x: S.radio.x, y: S.radio.y, label: ['الراديو', 'Radio'], act: radio });
   o.push({ x: S.mallBench.x, y: S.mallBench.y, label: ['الورشة', 'Workshop'], act: () => { if (!G.flags.gen) toast(tr('الورشة بلا كهرباء. المولدة عطلانة.', 'The workshop has no power. The generator is dead.')); else if (comp('mur').st === 'left') toast(tr('مرتضى راح.. ومحد يعرف يشتغل عليها.', 'Murtadha is gone... nobody else knows how to use it.')); else workshop(); } });
   o.push({ x: S.mallGen.x, y: S.mallGen.y, label: ['المولدة', 'Generator'], act: () => toast(G.flags.gen ? tr('المولدة تشتغل. صوتها أحلى من الموسيقى.', 'The generator is running. Sweeter than music.') : tr('مولدة المول عطلانة. يرادلها مرتضى و٣ قطع غيار.', 'The mall generator is dead. It needs Murtadha and 3 spare parts.')) });
+  o.push({ x: S.board.x, y: S.board.y, label: ['تطوير المقر', 'Develop the base'], act: baseMenu });
+  for (const k in LINKS) { const l = LINKS[k]; for (const [from, to, nm] of [[l.a, l.b, l.nb], [l.b, l.a, l.na]]) o.push({ x: S[from].x, y: S[from].y, r: 22, label: [l.n[0] + ' ← ' + nm[0], l.n[1] + ' → ' + nm[1]], hide: () => !G.links[k], act: () => travel(S[to]) }); }
   o.push({ x: S.pepsi.x, y: S.pepsi.y, r: 26, label: ['افحص الصندوق', 'Inspect the crate'], act: pepsi });
   for (const k in World.gates) o.push({ x: S[k].x, y: S[k].y, r: 44, label: ['افحص الصبّات', 'Inspect the barrier'], hide: () => G.flags[k], act: () => gateAct(k) });
   const lk = { police: ['key_police', S.policeDoor], armory: ['key_armory', S.armoryDoor], warehouse: [null, S.wareDoor] };
@@ -433,7 +435,7 @@ function updVeh(dt, ix, iy, m) {
     }
     v.sp *= .45;
   }
-  if (d.tank) v.fuel = Math.max(0, v.fuel - hyp(v.x - ox, v.y - oy) * d.use);
+  if (d.tank) v.fuel = Math.max(0, v.fuel - hyp(v.x - ox, v.y - oy) * d.use * .5);
   for (const z of R.act.slice()) { const dd = hyp(z.x - v.x, z.y - v.y); if (dd < d.r + 7 && v.sp > 45) { if (v.t === 'bike') { hitZ(z, 6, v.a, 130); v.sp *= .35; } else { hitZ(z, v.sp * .45, v.a, v.sp * 1.5); v.hp -= Math.max(.4, 2.5 - v.up.armor * 1.1); v.sp *= .84; } } }
   G.x = v.x; G.y = v.y; G.dir = dirOf(Math.cos(v.a), Math.sin(v.a));
   if (v.hp <= 0 && !v.brk) { v.brk = 1; toast(tr('السيارة عطلت! يرادلها تصليح عند مرتضى.', 'The vehicle broke down! Murtadha can repair it.')); }
@@ -680,6 +682,47 @@ function colonyPanel() {
     draw();
   });
 }
+const FAC = {
+  fuel: { n: ['مصفى بانزين صغير', 'Small fuel refinery'], out: ['جليكان بانزين', 'fuel can'], part: 1, need: () => G.flags.gen ? null : tr('يحتاج مولدة المول', 'needs the mall generator') },
+  food: { n: ['مطبخ المول', 'Mall kitchen'], out: ['صمون', 'bread'], part: 0, need: () => G.flags.gen ? null : tr('يحتاج مولدة المول', 'needs the mall generator') },
+  water: { n: ['فلتر ماي', 'Water filter'], out: ['ماي', 'water'], part: 0, need: () => G.flags.gen ? null : tr('يحتاج مولدة المول', 'needs the mall generator') },
+  med: { n: ['معمل دوه بالصيدلية', 'Pharmacy medicine lab'], out: ['دوه', 'medicine'], part: 1, need: () => here('noor') ? null : tr('يحتاج نور وياك', 'needs Noor with you') },
+  arms: { n: ['ورشة سلاح بالمشجب', 'Armory weapon shop'], out: ['رصاص', 'ammo'], part: 1, need: () => G.flags.lk_armory ? null : tr('يحتاج تفتح المشجب', 'needs the armory unlocked') }
+};
+const facCost = (k, lv) => { const c = { scrap: 5 + lv * 4 }; if (FAC[k].part) c.parts = lv + 1; return c; };
+const LINKS = {
+  hm: { a: 'tunHome', b: 'tunMall', n: ['ممر سري', 'Secret tunnel'], na: ['البيت', 'Home'], nb: ['المول', 'Mall'], cost: { scrap: 12 }, need: () => null },
+  mp: { a: 'brMall', b: 'brPharm', n: ['مجسر', 'Skybridge'], na: ['المول', 'Mall'], nb: ['الصيدلية', 'Pharmacy'], cost: { scrap: 8 }, need: () => null },
+  ma: { a: 'tunMall2', b: 'tunArm', n: ['ممر سري', 'Secret tunnel'], na: ['المول', 'Mall'], nb: ['المشجب', 'Armory'], cost: { scrap: 16, parts: 4 }, need: () => G.flags.lk_armory ? null : tr('يحتاج توصل للمشجب أول', 'reach the armory first') }
+};
+const CRAFT = [['pipe', { scrap: 2 }], ['wrench', { scrap: 4 }], ['cleaver', { scrap: 5 }], ['bat', { scrap: 5 }]];
+async function baseMenu() {
+  for (;;) {
+    const o = [];
+    for (const k in FAC) { const f = FAC[k], lv = G.fac[k], nd = f.need(); if (lv >= 3) continue; const c = facCost(k, lv); o.push({ t: L(f.n) + ' (' + lv + '/3)  —  ' + (nd || costStr(c)), c, nd, fn: () => { G.fac[k]++; toast(tr('انبنى ✓ ينتج ' + L(f.out) + ' كل يوم.', 'Built ✓ produces ' + L(f.out) + ' every day.')); } }); }
+    for (const k in LINKS) { const l = LINKS[k]; if (G.links[k]) continue; const nd = l.need(); o.push({ t: L(l.n) + ': ' + L(l.na) + ' ↔ ' + L(l.nb) + '  —  ' + (nd || costStr(l.cost)), c: l.cost, nd, fn: () => { G.links[k] = 1; toast(tr('انفتح ' + L(l.n) + '! تلكى مدخله بالمول وبالطرف الثاني.', L(l.n) + ' opened! Find its entrance in the mall and at the other end.'), 6000); } }); }
+    if (G.fac.arms > 0) for (const [w, c] of CRAFT) o.push({ t: tr('اصنع ', 'Craft ') + L(WEAPONS[w].n) + '  —  ' + costStr(c), c, fn: () => { G.weps[w] = WEAPONS[w].dur; } });
+    const labels = o.map(x => x.t); labels.push(tr('خلص', 'Done'));
+    const i = await say('me', tr('شنو نبني بالمقر؟  (سكراب: ' + (G.inv.scrap || 0) + '، قطع غيار: ' + (G.inv.parts || 0) + ')', 'What do we build?  (scrap: ' + (G.inv.scrap || 0) + ', parts: ' + (G.inv.parts || 0) + ')'), labels); if (i >= o.length) return;
+    if (o[i].nd) { toast(o[i].nd); continue; } if (!afford(o[i].c)) { toast(tr('ما عندك كفاية مواد.', 'Not enough materials.')); continue; }
+    pay(o[i].c); o[i].fn(); sfx('fix'); save(true);
+  }
+}
+function facDay(notes) {
+  const f = G.fac, out = [];
+  if (f.fuel) { add('fuel', f.fuel); out.push(tr('بانزين ×', 'fuel ×') + f.fuel); }
+  if (f.food) { add('samoon', f.food * 2); out.push(tr('صمون ×', 'bread ×') + f.food * 2); }
+  if (f.water) { add('water', f.water * 2); out.push(tr('ماي ×', 'water ×') + f.water * 2); }
+  if (f.med) { add('bandage', f.med); if (f.med >= 2) add('medkit', f.med - 1); out.push(tr('دوه ×', 'meds ×') + (f.med * 2 - 1)); }
+  if (f.arms) { add('ammo9', f.arms * 4); if (f.arms >= 2) add('ammo7', (f.arms - 1) * 8); out.push(tr('رصاص ×', 'ammo ×') + (f.arms * 4 + Math.max(0, f.arms - 1) * 8)); }
+  if (out.length) notes.push(tr('المقر أنتج اليوم: ', 'The base produced today: ') + out.join(tr('، ', ', ')) + '.');
+}
+async function travel(to) {
+  if (G.inVeh >= 0) return; R.busy++; $('#fade').classList.add('on'); sfx('door'); await wait(450);
+  G.x = to.x; G.y = to.y + 14; const p = World.freeNear(G.x, G.y); G.x = p.x; G.y = p.y; R.cam.x = G.x; R.cam.y = G.y; G.time += .2;
+  for (const n of R.npcs) if (n.follow) { const q = World.freeNear(G.x + rand(-14, 14), G.y + rand(-14, 14)); n.x = q.x; n.y = q.y; }
+  await wait(250); $('#fade').classList.remove('on'); R.busy--;
+}
 async function workshop() {
   for (;;) {
     const lv = G.lastVeh, vi = G.inVeh >= 0 ? G.inVeh : (lv >= 0 && !G.veh[lv].gone && hyp(G.veh[lv].x - G.x, G.veh[lv].y - G.y) < 520 ? lv : nearVeh(420)), v = vi >= 0 && !G.veh[vi].gone ? G.veh[vi] : null, vn = v ? L(VEH[v.t].n) : tr('ماكو سيارة قريبة', 'no vehicle nearby'), o = [];
@@ -757,7 +800,7 @@ async function nextDay(slept) {
   if (G.shel.garden) { add('dates', 2); notes.push(tr('الحديقة طلّعت تمر. الأرض بعدها تحبّنه.', 'The garden gave dates. The land still loves us.')); }
   if (G.flags.umali) { add('samoon'); notes.push(tr('أم علي خبزتلنا خبز حار.', 'Um Ali baked us hot bread.')); }
   if (has('kettle') && here('aj')) { add('tea'); notes.push(tr('أبو جاسم خدّر چاي. يكول "بلا چاي ماكو قيادة".', 'Abu Jasim brewed tea. He says "no tea, no driving".')); }
-  colonyDay(notes);
+  colonyDay(notes); facDay(notes);
   for (const id of COMPS) {
     const c = comp(id); if (!here(id)) continue; const nm = L(NPC[id].n);
     if (id === 'saif' && G.day - c.joinDay >= 2) { c.st = 'left'; notes.push(tr('سيف عافنه. كال "رايح أسوي بث مباشر ويه الزومبي". الله وياه.', 'Saif left. Said he is "going live with the zombies". Godspeed.')); if (has('can')) { take('can'); notes.push(tr('..وأخذ علبة معلبات وياه. الوغد.', '...and took a can of food with him. The rascal.')); } else { add('ammo9', 5); notes.push(tr('بس عاف النه رصاص هدية.', 'But he left us some ammo as a gift.')); } continue; }
@@ -883,6 +926,7 @@ function update(dt) {
   const h = G.time % 24; if (h >= 18.5 && h < 19 && G.time < 24) tip('night' + G.day, 'الدنيا صارت ليل.. الزومبي أخطر. نام بالبيت أو بالمول، أو بأي بيت بيه جرباية.', 'Night is falling... zombies get worse. Sleep at home, at the mall, or in any house with a bed.');
   // safe-zone autosave + story triggers
   if (R.pSafe && !R.wasSafe) { const mall = pb && World.buildings[pb - 1].type === 'mall'; G.safe = mall ? { x: S.mallBed.x, y: S.mallBed.y + 26 } : { x: S.start.x, y: S.start.y }; if (mall && !G.flags.mall) { G.flags.mall = 1; toast(tr('مول الكرادة: مكان آمن. الزومبي ما يدخلون هنا.', 'Karrada mall: a safe place. Zombies do not come in here.'), 6000); } if (R.t - R.lastAuto > 25) save(true); }
+  if (R.pSafe && G.flags.gen && pb && World.buildings[pb - 1].type === 'mall') tip('board', 'ميز "تطوير المقر" بالمول: تبني منه مصفى بانزين ومطبخ وفلتر ماي وممرات.', 'The "Develop the base" desk in the mall: build a refinery, kitchen, water filter and passages.');
   R.wasSafe = R.pSafe;
   if ((R.hudT -= dt) <= 0) { R.hudT = .12; hud(); }
 }
@@ -1076,5 +1120,5 @@ function loop(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; 
 View3D.init($('#gl')); resize(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); renderMenu(); requestAnimationFrame(loop);
 setTimeout(() => checkUpdate(false), 1500);
 window.__izFast = () => setInterval(() => { try { update(1 / 60); } catch (e) { console.error(e); } }, 16);
-window.__iz = { colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
+window.__iz = { baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
 })();

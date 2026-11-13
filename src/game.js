@@ -50,6 +50,11 @@ const NPC = {
   umali: { n: ['أم علي', 'Um Ali'] }, book: { n: ['أبو الكتب', 'The Bookseller'] }
 };
 const COMPS = ['aj', 'noor', 'mur', 'cat', 'saif', 'sol'];
+for (let i = 0; i < 8; i++) NPC['sv' + i] = { n: ['ناجي', 'Survivor'] };
+const JOBS = { guard: ['حرّاس', 'Guards', 'يقللون هجمات الزومبي عالمقر', 'Thin out the hordes at the base'], farm: ['مزارعين', 'Farmers', 'كل مزارع يأكّل نفرين', 'Each farmer feeds two people'], scav: ['جمّاعين', 'Scavengers', 'يجيبون أغراض كل يوم', 'Bring back supplies every day'], doc: ['باحثين', 'Researchers', 'يشتغلون على اللقاح', 'Work on the vaccine'] };
+const CLV = [[0, ['ملجأ', 'Shelter'], -1], [4, ['نقطة ناجين', 'Survivor outpost'], 2], [8, ['حيّ محرَّر', 'Liberated district'], 1], [12, ['مستعمرة', 'Colony'], 0], [16, ['مدينة ناجين', 'Survivor city'], 3]];
+const colLevel = () => { let l = 0; for (let i = 0; i < CLV.length; i++) if (G.col.pop >= CLV[i][0]) l = i; return l; };
+const secured = zn => { const l = colLevel(); for (let i = 1; i <= l; i++) if (CLV[i][2] === zn) return true; return false; };
 const LOOK = {
   player: { id: 'pl', shirt: '#c9a84c', pants: '#2a2f3a', hair: '#17110d' },
   aj: { id: 'aj', robe: '#e9e4d6', shirt: '#e9e4d6', hat: 'shemagh', hatc: '#ececec', beard: 1, hair: '#666', fat: 1 },
@@ -61,6 +66,7 @@ const LOOK = {
   umali: { id: 'um', robe: '#16161a', shirt: '#16161a', hat: 'hijab', hatc: '#16161a' },
   book: { id: 'bk', shirt: '#6b4f2a', pants: '#444', hair: '#ccc', beard: 1 }
 };
+for (let i = 0; i < 8; i++) LOOK['sv' + i] = { id: 'sv' + i, skin: ['#c99870', '#b98860', '#d8a880'][i % 3], shirt: i % 4 === 1 ? null : ['#4a7a4a', '#8a3a3a', '#3b6ea5', '#6a5a8a', '#a05a2a'][i % 5], robe: i % 4 === 1 ? ['#e9e4d6', '#16161a'][i % 2] : null, pants: '#2c2f36', hair: '#1b1410', hat: i % 3 === 2 ? 'hijab' : null, hatc: ['#8e3b5e', '#16161a', '#3a5a8a'][i % 3], beard: i % 4 === 3, fat: i === 5 };
 const ZT = { normal: { hp: 30, sp: 17, dmg: 7 }, vendor: { hp: 30, sp: 15, dmg: 7 }, cop: { hp: 42, sp: 19, dmg: 8 }, gen: { hp: 70, sp: 11, dmg: 10 }, fat: { hp: 80, sp: 12, dmg: 12 }, soldier: { hp: 55, sp: 20, dmg: 10 }, hassan: { hp: 26, sp: 14, dmg: 5 }, colonel: { hp: 170, sp: 18, dmg: 14 }, boss: { hp: 750, sp: 24, dmg: 22 } };
 const ZLINES = {
   normal: [['أأأأه..', 'مخخخ..', 'وين.. الكهرباء..', 'راتب.. راتب..', 'مممم.. تمن ومرق..', 'الوطني.. طفت..', 'نت.. ضعيف..'], ['Uuugh..', 'Braaains..', 'Where... is the power..', 'Salary... salary..', 'Mmm... rice and stew..', 'The grid... is out..', 'Wifi... weak..']],
@@ -224,7 +230,7 @@ function save(auto) {
 function blank(name) {
   const comps = {}; for (const id of COMPS) comps[id] = { st: 'none', trust: 50, joinDay: 0, asked: 0 };
   const veh = [['bike', 'bike', 0], ['stuta', 'stuta', 0], ['kia', 'kia', 0], ['saipa', 'saipa', 0], ['truck', 'truck', 70]].map(([t, s, f]) => ({ t, x: S[s].x, y: S[s].y, a: 0, sp: 0, fuel: f, hp: VEH[t].hp, up: { armor: 0, tank: 0, horn: 0, seats: 0 } }));
-  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
+  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, col: { pop: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
 }
 function enterWorld() {
   World.gen(); View3D.build();
@@ -264,6 +270,7 @@ function syncNpcs() {
   if (G.day >= 2) put('haji', S.haji);
   if (G.flags.umali) put('umali', { x: S.home.x + 28, y: S.home.y - 10 }); else if (G.day >= 4) put('umali', S.umali);
   put('book', S.book);
+  for (let i = 0; i < Math.min(8, G.col.pop); i++) put('sv' + i, { x: S.mall.x - 70 + (i % 4) * 34, y: S.mall.y - 40 + ((i / 4) | 0) * 120 + (i % 2) * 14 });
 }
 function buildObjs() {
   const o = R.objs; o.length = 0;
@@ -319,7 +326,8 @@ const ZCOUNT = [22, 32, 34, 26, 36];
 function spawnAll() {
   R.zombies.length = 0; const f = G.flags;
   if (f.ended === 'good') return;
-  for (let zn = 0; zn < 5; zn++) { const n = Math.round(ZCOUNT[zn] * (1 + Math.min(G.day, 12) * .035)); for (let i = 0; i < n; i++) { const p = World.randOutdoor(zn); if (!p || hyp(p.x - G.x, p.y - G.y) < 170) continue; if (zn === 0 && !f.hassan && hyp(p.x - S.home.x, p.y - S.home.y) < 260) continue; R.zombies.push(mkZ(ztype(zn), p.x, p.y)); } }
+  if (G.col.horde) { const n = Math.max(4, 12 + G.col.pop - G.col.jobs.guard * 3); for (let i = 0; i < n; i++) { const a = rand(0, 6.28), z = mkZ(ztype(2), S.mallDoor.x + Math.cos(a) * rand(120, 240), S.mallDoor.y + 60 + Math.abs(Math.sin(a)) * rand(40, 160)); z.alert = 20; if (!solidAt(z.x, z.y, 1)) R.zombies.push(z); } G.col.horde = 0; }
+  for (let zn = 0; zn < 5; zn++) { const n = Math.round(ZCOUNT[zn] * (1 + Math.min(G.day, 12) * .035 + G.col.pop * .04) * (secured(zn) ? .3 : 1)); for (let i = 0; i < n; i++) { const p = World.randOutdoor(zn); if (!p || hyp(p.x - G.x, p.y - G.y) < 170) continue; if (zn === 0 && !f.hassan && hyp(p.x - S.home.x, p.y - S.home.y) < 260) continue; R.zombies.push(mkZ(ztype(zn), p.x, p.y)); } }
   if (!f.hassan) { const z = mkZ('hassan', S.hassan.x, S.hassan.y); z.guard = 1; z.dir = 2; R.zombies.push(z); }
   if (!f.g2) for (let i = 0; i < 6; i++) R.zombies.push(mkZ('cop', S.cops.x + rand(-20, 20), S.cops.y + rand(-20, 30)));
   if (!f.colonel) R.zombies.push(mkZ('colonel', S.colonel.x, S.colonel.y));
@@ -640,6 +648,38 @@ const SC = {
     return say('book', pick(L([['خير جليس بالزمان كتاب.. وخير سلاح بوري.', 'إذا لكيت زومبي يقرا.. عوفه، هذا واحد منّا.', 'الكتب ما تنباع هالأيام. مثل قبل بالضبط.'], ['The best companion is a book... the best weapon, a pipe.', "If you see a zombie reading... leave him, he's one of us.", "Books don't sell these days. Exactly like before."]])));
   }
 };
+for (let i = 0; i < 8; i++) SC['sv' + i] = () => say('sv' + i, pick(L([['الحمد لله لكينا مكان. سمعنا صوتك بالراديو.', 'اني جنت معلم.. هسه أحرس باب مول. الدنيا دوّارة.', 'شكو أكل اليوم؟ لا تكلي تمر مرة ثانية.', 'إذا تحتاج شي كول. إحنا أهل.', 'الزومبيات برّه تزيد كل ما نزيد إحنا.. يشمّون الأمل.'], ['Thank God we found a place. We heard your voice on the radio.', 'I was a teacher... now I guard a mall door. Life is funny.', "What's for dinner? Don't say dates again.", 'If you need anything, say so. We are family now.', 'The more of us there are, the more zombies gather outside... they smell hope.']])));
+async function broadcast() {
+  const c = G.col; if (c.bDay === G.day) return say(tr('الراديو', 'Radio'), tr('بثّيت اليوم. خلّي النداء يوصل.. جرّب باجر.', 'You already broadcast today. Let the call travel... try tomorrow.'));
+  c.bDay = G.day; c.incoming = 1; c.horde = 1; sfx('page');
+  await say('me', tr('"إلى كل من يسمعني.. هنا مول الكرادة. عدنا أكل وماي وسكف. تعالوا. والزومبي بطيء، لا تخافون."', '"To anyone who can hear me... this is Karrada Mall. We have food, water and a roof. Come. The zombies are slow, don\'t be afraid."'));
+  toast(tr('النداء انبث. الناجين يوصلون باجر الصبح.. والصوت راح يجمّع زومبي حول المول الليلة.', 'The call is out. Survivors arrive tomorrow morning... and the noise will draw zombies around the mall tonight.'), 7000);
+}
+function colonyDay(notes) {
+  const c = G.col, j = c.jobs;
+  if (c.incoming) { c.incoming = 0; const n = 1 + ((Math.random() * 3) | 0) + (colLevel() >= 2 ? 1 : 0); c.pop += n; j.scav += n; notes.push(tr('وصلوا ' + n + ' ناجين على صوت الراديو! صرنا ' + c.pop + '.', n + ' survivors followed the radio! We are ' + c.pop + ' now.')); }
+  if (!c.pop) return;
+  const lv0 = c.lv || 0; let food = j.farm * 2, got = [];
+  for (let i = 0; i < j.scav; i++) { const r = Math.random(); if (r < .45) food++; else if (r < .65) { add('scrap'); got.push('scrap'); } else if (r < .78) { add('water'); got.push('water'); } else if (r < .86) { add('parts'); got.push('parts'); } else if (r < .92) { add('ammo9', 3); got.push('ammo9'); } else if (r < .95) { add('fuel'); got.push('fuel'); } }
+  let lack = c.pop - food; while (lack > 0) { const f = FOODS.find(x => has(x)); if (!f) break; take(f); lack--; }
+  if (lack > 0) { const gone = Math.min(c.pop, Math.ceil(lack / 2)); c.pop -= gone; let g = gone; for (const k of ['scav', 'doc', 'guard', 'farm']) { const d = Math.min(j[k], g); j[k] -= d; g -= d; } notes.push(tr('الأكل ما كفّى المستعمرة. ' + gone + ' عافونه وراحوا يدورون رزقهم.', 'Not enough food for the colony. ' + gone + ' left to fend for themselves.')); }
+  else if (food > c.pop) { const ex = Math.min(3, food - c.pop); add('samoon', ex); notes.push(tr('المزارعين طلّعوا أكل زايد: صمون ×' + ex + '.', 'The farmers had a surplus: bread ×' + ex + '.')); }
+  if (got.length) notes.push(tr('الجمّاعين رجعوا بـ ' + got.length + ' غرض.', 'The scavengers came back with ' + got.length + ' items.'));
+  if (j.doc) { const b = c.research; c.research += j.doc + (here('noor') ? 1 : 0); for (const [th, a, e] of [[8, 'الباحثين: "عرفنا شي.. الزومبي يهدأ من يشمّ چاي".', 'Researchers: "We learned something... zombies calm down at the smell of tea."'], [20, 'الباحثين جرّبوا لقاح رقم ٧ على زومبي.. كام يرقص. مو هذا المطلوب.', 'The researchers tried vaccine #7 on a zombie... it started dancing. Not the goal.'], [40, 'اللقاح التجريبي اشتغل على واحد! رجع يحچي.. وأول شي سأل عن راتبه.', 'The trial vaccine worked on one! He can talk again... first thing he asked about was his salary.']]) if (b < th && c.research >= th) { notes.push(tr(a, e)); if (th === 40) G.flags.vaccine = 1; } }
+  c.lv = colLevel(); if (c.lv > lv0) notes.push(tr('المكان كبر! صرنا "' + CLV[c.lv][1][0] + '". ' + L(ZONES[CLV[c.lv][2]]) + ' صارت منطقة مؤمّنة.. بس الزومبيات برّه زادت.', 'We grew! We are now a "' + CLV[c.lv][1][1] + '". ' + L(ZONES[CLV[c.lv][2]]) + ' is secured... but the zombies outside multiplied.'));
+}
+function colonyPanel() {
+  return openPanel(tr('المستعمرة', 'The Colony'), box => {
+    const draw = () => { while (box.children.length > 1) box.lastChild.remove(); const c = G.col, j = c.jobs, lv = colLevel(), free = c.pop - j.guard - j.farm - j.scav - j.doc, nx = CLV[lv + 1];
+      box.appendChild(el('p', tr('المستوى: ', 'Level: ') + L(CLV[lv][1]) + '   ·   ' + tr('الناجين: ', 'Survivors: ') + c.pop + (nx ? '   ·   ' + tr('التوسعة الجاية عند ', 'Next expansion at ') + nx[0] : '')));
+      const sec = [0, 1, 2, 3].filter(secured).map(z => L(ZONES[z])); box.appendChild(el('p', tr('المناطق المؤمّنة: ', 'Secured areas: ') + (sec.length ? sec.join(tr('، ', ', ')) : tr('ولا وحدة بعد', 'none yet'))));
+      box.appendChild(el('p', tr('الأكل اليومي: ينتجون ', 'Daily food: produce ') + (j.farm * 2) + tr(' + الي يلكوه الجمّاعين، ويحتاجون ', ' + scavenged, need ') + c.pop + '   ·   ' + tr('بحث اللقاح: ', 'Vaccine research: ') + Math.min(100, Math.round(c.research / 40 * 100)) + '%'));
+      box.appendChild(el('h3', tr('توزيع الشغل', 'Jobs') + (free ? '  (' + tr('بلا شغل: ', 'idle: ') + free + ')' : '')));
+      for (const k in JOBS) { const row = el('div', null, 'row'), nm = el('span', L(JOBS[k]) + ': ' + j[k] + '  '); nm.appendChild(el('small', tr(JOBS[k][2], JOBS[k][3]))); const bs = el('span'); bs.append(btn('−', () => { if (j[k] > 0) { j[k]--; draw(); } }), ' ', btn('+', () => { if (c.pop - j.guard - j.farm - j.scav - j.doc > 0) { j[k]++; draw(); } })); row.append(nm, bs); box.appendChild(row); }
+      if (!c.pop) box.appendChild(el('p', tr('ماكو ناجين بعد. بث نداء من الراديو.', 'No survivors yet. Broadcast a call from the radio.'))); };
+    draw();
+  });
+}
 async function workshop() {
   for (;;) {
     const lv = G.lastVeh, vi = G.inVeh >= 0 ? G.inVeh : (lv >= 0 && !G.veh[lv].gone && hyp(G.veh[lv].x - G.x, G.veh[lv].y - G.y) < 520 ? lv : nearVeh(420)), v = vi >= 0 && !G.veh[vi].gone ? G.veh[vi] : null, vn = v ? L(VEH[v.t].n) : tr('ماكو سيارة قريبة', 'no vehicle nearby'), o = [];
@@ -681,6 +721,8 @@ async function radio() {
     await say(tr('الراديو', 'Radio'), tr('..ومركز شرطة الكرادة بي سلاح.. المفتاح عند العقيد.. والعقيد.. كششش.. ما رايح يتقاعد.', "...Karrada police station has weapons... the Colonel has the key... and the Colonel... kshhh... is never retiring."));
     return say('me', tr('مخزن مشروبات؟ شنو علاقة المشروبات بالزومبي؟ لازم أعرف.', 'A drinks warehouse? What do drinks have to do with zombies? I have to find out.'));
   }
+  const ri = await say('me', tr('الراديو شغّال. شسوي؟', 'The radio is live. What now?'), [tr('أبث نداء للناجين', 'Broadcast a call for survivors'), tr('شؤون المستعمرة (' + G.col.pop + ' ناجي)', 'Colony affairs (' + G.col.pop + ' survivors)'), tr('أسمع بس', 'Just listen')]);
+  if (ri === 0) return broadcast(); if (ri === 1) return colonyPanel();
   return say(tr('الراديو', 'Radio'), pick(L([['كششش.. نشرة الأحوال الجوية: حار. كششش.. باجر: حار.', 'كششش.. وزارة الكهرباء تعتذر عن.. كششش.. كلشي.', 'كششش.. أغنية قديمة.. كششش..'], ['Kshhh... weather report: hot. Kshhh... tomorrow: hot.', 'Kshhh... the Ministry of Electricity apologises for... kshhh... everything.', 'Kshhh... an old song... kshhh...']])));
 }
 async function pepsi() {
@@ -715,6 +757,7 @@ async function nextDay(slept) {
   if (G.shel.garden) { add('dates', 2); notes.push(tr('الحديقة طلّعت تمر. الأرض بعدها تحبّنه.', 'The garden gave dates. The land still loves us.')); }
   if (G.flags.umali) { add('samoon'); notes.push(tr('أم علي خبزتلنا خبز حار.', 'Um Ali baked us hot bread.')); }
   if (has('kettle') && here('aj')) { add('tea'); notes.push(tr('أبو جاسم خدّر چاي. يكول "بلا چاي ماكو قيادة".', 'Abu Jasim brewed tea. He says "no tea, no driving".')); }
+  colonyDay(notes);
   for (const id of COMPS) {
     const c = comp(id); if (!here(id)) continue; const nm = L(NPC[id].n);
     if (id === 'saif' && G.day - c.joinDay >= 2) { c.st = 'left'; notes.push(tr('سيف عافنه. كال "رايح أسوي بث مباشر ويه الزومبي". الله وياه.', 'Saif left. Said he is "going live with the zombies". Godspeed.')); if (has('can')) { take('can'); notes.push(tr('..وأخذ علبة معلبات وياه. الوغد.', '...and took a can of food with him. The rascal.')); } else { add('ammo9', 5); notes.push(tr('بس عاف النه رصاص هدية.', 'But he left us some ammo as a gift.')); } continue; }
@@ -806,6 +849,7 @@ function objective() {
   if (!f.murHealed) return has('medicine') ? [tr('رجّع الدوه لنور', 'Bring the medicine to Noor'), S.noor] : [tr('جيب الدوه من الصيدلية كبال المول', 'Get the medicine from the pharmacy across the street'), S.pharm];
   if (!f.gen) return [tr('جمّع ٣ قطع غيار لمرتضى (' + (G.inv.parts || 0) + '/3)', 'Collect 3 spare parts for Murtadha (' + (G.inv.parts || 0) + '/3)'), has('parts', 3) || !f.murAsk ? S.mur : null];
   if (!f.radio) return [tr('جرّب الراديو بالمول', 'Try the radio in the mall'), S.radio];
+  if (!f.col1 && G.col.pop === 0 && G.col.bDay === 0) return [tr('ارجع للراديو وبث نداء للناجين', 'Go back to the radio and broadcast a call for survivors'), S.radio];
   if (!f.pistol) return has('key_police') ? [tr('افتح مركز الشرطة وخذ السلاح', 'Open the police station and take the weapon'), S.policeDoor] : [tr('خذ مفتاح المركز من العقيد الزومبي', 'Take the station key from the zombie Colonel'), R.zombies.find(z => z.type === 'colonel') || S.colonel];
   if (!f.g3) return [tr('افتح الطريق للمتنبي بقاطع الحديد', 'Open the road to Mutanabbi with the bolt cutter'), S.g3];
   if (!f.book) return [tr('اسأل أبو الكتب بشارع المتنبي', 'Ask the Bookseller on Mutanabbi Street'), S.book];
@@ -936,7 +980,7 @@ function mapPanel() {
 }
 function controlsPanel() {
   return openPanel(tr('التحكم', 'Controls'), box => {
-    const rows = [['W A S D  /  ↑ ← ↓ →', tr('الحركة والسياقة (نفس الأزرار)', 'Move and drive (same keys)')], ['Shift', tr('ركض', 'Run')], [tr('الماوس', 'Mouse'), tr('تصويب — الزر الأيسر ضرب/إطلاق', 'Aim — left button attacks / fires')], [tr('الزر الأيمن (ضغط مستمر)', 'Right button (hold)'), tr('امشي/سوق باتجاه المؤشر', 'Walk / drive toward the cursor')], ['Space', tr('ضرب (بالكيبورد)', 'Attack (keyboard)')], [tr('عجلة الماوس', 'Mouse wheel'), tr('تقريب وتبعيد الكاميرا', 'Camera zoom in / out')], ['C', tr('رجّع الكاميرا للوضع الطبيعي', 'Reset the camera')], ['V', tr('الكاميرا: تدور ويه اتجاهك / ثابتة', 'Camera: follow your direction / fixed')], ['E', tr('تفاعل / اركب / انزل / احچي', 'Interact / get on / get off / talk')], ['Q', tr('بدّل السلاح', 'Switch weapon')], ['F', tr('أكل وشرب سريع', 'Quick eat / drink')], ['X', tr('علاج سريع', 'Quick heal')], ['H', tr('هورن (بالسيارة)', 'Horn (in a vehicle)')], ['I  /  Tab', tr('الحقيبة', 'Bag')], ['M', tr('الخريطة', 'Map')], ['F5', tr('حفظ يدوي', 'Manual save')], ['F11', tr('ملء الشاشة', 'Fullscreen')], ['Esc', tr('القائمة', 'Menu')]];
+    const rows = [['W A S D  /  ↑ ← ↓ →', tr('الحركة والسياقة (نفس الأزرار)', 'Move and drive (same keys)')], ['Shift', tr('ركض', 'Run')], [tr('الماوس', 'Mouse'), tr('تصويب — الزر الأيسر ضرب/إطلاق', 'Aim — left button attacks / fires')], [tr('الزر الأيمن (ضغط مستمر)', 'Right button (hold)'), tr('امشي/سوق باتجاه المؤشر', 'Walk / drive toward the cursor')], ['Space', tr('ضرب (بالكيبورد)', 'Attack (keyboard)')], [tr('عجلة الماوس', 'Mouse wheel'), tr('تقريب وتبعيد الكاميرا', 'Camera zoom in / out')], ['C', tr('رجّع الكاميرا للوضع الطبيعي', 'Reset the camera')], ['V', tr('الكاميرا: تدور ويه اتجاهك / ثابتة', 'Camera: follow your direction / fixed')], ['E', tr('تفاعل / اركب / انزل / احچي', 'Interact / get on / get off / talk')], ['Q', tr('بدّل السلاح', 'Switch weapon')], ['F', tr('أكل وشرب سريع', 'Quick eat / drink')], ['X', tr('علاج سريع', 'Quick heal')], ['H', tr('هورن (بالسيارة)', 'Horn (in a vehicle)')], ['I  /  Tab', tr('الحقيبة', 'Bag')], ['M', tr('الخريطة', 'Map')], ['K', tr('المستعمرة', 'Colony')], ['F5', tr('حفظ يدوي', 'Manual save')], ['F11', tr('ملء الشاشة', 'Fullscreen')], ['Esc', tr('القائمة', 'Menu')]];
     const t = el('table'); for (const r of rows) { const row = el('tr'); row.append(el('td', r[0]), el('td', r[1])); t.appendChild(row); } box.appendChild(t);
     box.appendChild(el('p', tr('الحفظ التلقائي يصير من تدخل مكان آمن (البيت، المول) ومن تنام.', 'Autosave happens when you enter a safe place (home, mall) and when you sleep.')));
   });
@@ -1013,7 +1057,7 @@ addEventListener('keydown', e => {
   if (e.repeat || R.busy > 0) return;
   switch (k) {
     case 'Escape': pauseMenu(); break; case 'KeyE': interact(); break; case 'KeyI': case 'Tab': invPanel(); break; case 'KeyM': mapPanel(); break;
-    case 'KeyQ': cycleWeapon(); break; case 'KeyC': G.zoom = 3; View3D.resetYaw(); break; case 'KeyV': G.camFollow = G.camFollow === 0 ? 1 : 0; if (!G.camFollow) View3D.resetYaw(); toast(G.camFollow ? tr('الكاميرا تدور ويه اتجاهك', 'Camera follows your direction') : tr('الكاميرا ثابتة', 'Camera fixed')); break; case 'KeyH': horn(); break; case 'F5': save(false); break; case 'KeyF': quick('eat'); break; case 'KeyX': quick('heal'); break;
+    case 'KeyQ': cycleWeapon(); break; case 'KeyC': G.zoom = 3; View3D.resetYaw(); break; case 'KeyV': G.camFollow = G.camFollow === 0 ? 1 : 0; if (!G.camFollow) View3D.resetYaw(); toast(G.camFollow ? tr('الكاميرا تدور ويه اتجاهك', 'Camera follows your direction') : tr('الكاميرا ثابتة', 'Camera fixed')); break; case 'KeyH': horn(); break; case 'KeyK': colonyPanel(); break; case 'F5': save(false); break; case 'KeyF': quick('eat'); break; case 'KeyX': quick('heal'); break;
   }
 });
 addEventListener('keyup', e => { R.keys[e.code] = false; });
@@ -1032,5 +1076,5 @@ function loop(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; 
 View3D.init($('#gl')); resize(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); renderMenu(); requestAnimationFrame(loop);
 setTimeout(() => checkUpdate(false), 1500);
 window.__izFast = () => setInterval(() => { try { update(1 / 60); } catch (e) { console.error(e); } }, 16);
-window.__iz = { get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
+window.__iz = { colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
 })();

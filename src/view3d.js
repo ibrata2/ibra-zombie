@@ -2,7 +2,7 @@
 // World units: 1 unit = 1 tile (16 game px). X = east, Z = south, Y = up.
 const View3D = (() => {
   let YAW = 0.62; const PITCH = 0.9, W = World.W, H = World.H, I = World.I, T = World.tiles;
-  let renderer, scene, cam, sun, hemi, flash, mallL, homeL, wreckG, beam, view = 11, rnd, t = 0; const xcars = new Map();
+  let renderer, scene, cam, sun, hemi, flash, mallL, homeL, wreckG, beam, bridgeG, pads = [], view = 11, rnd, t = 0; const xcars = new Map();
   const tgt = new THREE.Vector3(), lampLights = [], lamps = [], bld = [], gates = {}, picks = [], figs = new Map(), vehs = [];
   const rr = (a, b) => a + rnd() * (b - a);
   const mats = {}; const M = (color, o) => { const k = color + (o ? JSON.stringify(o) : ''); return mats[k] || (mats[k] = new THREE.MeshStandardMaterial(Object.assign({ color, roughness: .92, metalness: 0 }, o))); };
@@ -87,11 +87,13 @@ const View3D = (() => {
       const wm = M(WALLC[b.st][0]);
       for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { const tt = T[I(x, y)]; if (tt === 4) box(1, .7, 1, wm, x + .5, .35, y + .5, inside); else if (tt === 13) box(1, .9, .3, M('#5a626e'), x + .5, .45, y + .5, inside); }
     }
-    const P = { fridge: [[.5, 1.15, .5, '#e3e7e9', 0, .58, 0]], cupboard: [[.75, 1, .45, '#7a5230', 0, .5, 0]], shelf: [[.9, .9, .35, '#6d7379', 0, .45, 0], [.8, .12, .3, '#c0392b', 0, .62, 0], [.8, .12, .3, '#e3b62f', 0, .32, 0]], med: [[.8, .95, .35, '#f0f0f0', 0, .48, 0], [.3, .1, .37, '#d0312d', 0, .7, 0]], locker: [[.6, 1.2, .45, '#5a6470', 0, .6, 0]], desk: [[.95, .5, .55, '#6b4a2a', 0, .25, 0], [.3, .2, .25, '#222222', .15, .6, 0]], crate: [[.65, .55, .65, '#9a7442', 0, .28, 0]],
+    const P = { stairs: [[.9, .25, .9, '#7a7468', 0, .12, .3], [.9, .5, .6, '#6f695e', 0, .25, .1], [.9, .8, .3, '#645e54', 0, .4, -.2]], fridge: [[.5, 1.15, .5, '#e3e7e9', 0, .58, 0]], cupboard: [[.75, 1, .45, '#7a5230', 0, .5, 0]], shelf: [[.9, .9, .35, '#6d7379', 0, .45, 0], [.8, .12, .3, '#c0392b', 0, .62, 0], [.8, .12, .3, '#e3b62f', 0, .32, 0]], med: [[.8, .95, .35, '#f0f0f0', 0, .48, 0], [.3, .1, .37, '#d0312d', 0, .7, 0]], locker: [[.6, 1.2, .45, '#5a6470', 0, .6, 0]], desk: [[.95, .5, .55, '#6b4a2a', 0, .25, 0], [.3, .2, .25, '#222222', .15, .6, 0]], crate: [[.65, .55, .65, '#9a7442', 0, .28, 0]],
       bed: [[.8, .3, 1.5, '#6b4a2a', 0, .15, 0], [.72, .12, .9, '#a8423a', 0, .36, .25], [.6, .1, .35, '#f4f4f4', 0, .36, -.5]], bench: [[1.1, .55, .6, '#5a4630', 0, .28, 0], [.3, .15, .2, '#888888', -.2, .62, 0]], radio: [[.8, .45, .5, '#5a4630', 0, .22, 0], [.4, .25, .2, '#2a2a2a', 0, .58, 0]], bigen: [[1.6, .9, .8, '#d9a51f', -.3, .45, 0], [.5, .5, .5, '#333333', -.6, 1.1, 0]], pepsi: [[1.1, .5, .8, '#9a7442', 0, .25, 0], [.9, .3, .6, '#1b4fa3', 0, .65, 0], [.9, .08, .6, '#d0312d', 0, .7, 0]] };
     const putProp = (kind, x, z, parent) => { for (const p of P[kind] || P.crate) box(p[0], p[1], p[2], M(p[3]), x + p[4], p[5], z + p[6], parent); };
-    for (const c of World.containers) if (c.b) putProp(c.kind, c.x / 16, c.y / 16, bld[c.b - 1].inside);
-    for (const o of World.inner) putProp(o.k, o.x / 16, o.y / 16 - (o.k === 'bed' ? .2 : 0), bld[o.b - 1].inside);
+    const MI = World.spots._mall, me = bld[MI.b - 1]; me.fl = [0, 1, 2].map(() => { const g = new THREE.Group(); me.inside.add(g); return g; }); MI.floors.forEach((F, i) => F.forEach(o => putProp(o.k, o.tx + .5, o.ty + .5 - (o.k === 'bed' ? .2 : 0), me.fl[i + 1])));
+    const par = (b, all) => { const e = bld[b - 1]; return e.fl && !all ? e.fl[0] : e.inside; };
+    for (const c of World.containers) if (c.b) putProp(c.kind, c.x / 16, c.y / 16, par(c.b));
+    for (const o of World.inner) putProp(o.k, o.x / 16, o.y / 16 - (o.k === 'bed' ? .2 : 0), par(o.b, o.all));
     // barriers (instanced), gates, fences
     { let n = 0, nf = 0; for (let i = 0; i < W * H; i++) { if (T[i] === 7) n++; if (T[i] === 10) nf++; }
       const im = new THREE.InstancedMesh(new THREE.BoxGeometry(.96, 1.9, .55), M('#8d8c84'), n), fm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1.5, .06), M('#6f757b', { transparent: true, opacity: .75 }), nf), o = new THREE.Object3D(); let k = 0, kf = 0;
@@ -114,6 +116,9 @@ const View3D = (() => {
     // lights
     sun = new THREE.DirectionalLight(0xffffff, 1); sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; hemi = new THREE.HemisphereLight(0xbcd0e6, 0x8a7a5a, .5); scene.add(sun, sun.target, hemi);
     for (let i = 0; i < 5; i++) { const l = new THREE.SpotLight(0xffe2b0, 0, 16, .95, .7, 1.2); l.castShadow = i < 2; l.shadow.mapSize.set(1024, 1024); scene.add(l, l.target); lampLights.push(l); }
+    // skybridge mall <-> pharmacy, and glowing pads at passage entrances
+    bridgeG = new THREE.Group(); { const m = M('#6f7480', { metalness: .4, roughness: .6 }), x = 123.5; box(1.1, .12, 6.6, m, x, 1.95, 56, bridgeG); for (const sx of [-.55, .55]) { box(.06, .55, 6.6, m, x + sx, 2.25, 56, bridgeG); } for (const z of [53.4, 58.6]) for (const sx of [-.45, .45]) box(.12, 1.9, .12, m, x + sx, .95, z, bridgeG); for (let z = 53.2; z < 59; z += .8) box(1.1, .02, .06, M('#e3b62f'), x, 2.02, z, bridgeG, true); } bridgeG.visible = false; scene.add(bridgeG);
+    pads = []; for (const [k, sp, col] of [['hm', 'tunHome', '#7fc24b'], ['hm', 'tunMall', '#7fc24b'], ['mp', 'brMall', '#6cc4ff'], ['mp', 'brPharm', '#6cc4ff'], ['ma', 'tunMall2', '#e3b62f'], ['ma', 'tunArm', '#e3b62f']]) { const e = World.spots[sp], g = new THREE.Group(); box(.86, .05, .86, M('#1c1c20'), 0, .03, 0, g, true); box(.6, .04, .6, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4 }), 0, .07, 0, g, true); g.position.set(e.x / 16, 0, e.y / 16); g.visible = false; scene.add(g); pads.push({ k, g, b: World.bAt(e.x >> 4, e.y >> 4) }); }
     beam = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, 16, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd966, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide })); beam.visible = false; scene.add(beam);
     flash = new THREE.PointLight(0xfff0d0, 0, 11, 1.4); mallL = new THREE.PointLight(0xfff2d8, 0, 18, 1.2); homeL = new THREE.PointLight(0xffe2b0, 0, 12, 1.2); scene.add(flash, mallL, homeL);
     mallL.position.set(World.spots.mall.x / 16, 3, World.spots.mall.y / 16); homeL.position.set(World.spots.home.x / 16, 2.4, World.spots.home.y / 16);
@@ -199,12 +204,14 @@ const View3D = (() => {
     const a = innerWidth / innerHeight; cam.left = -view * a; cam.right = view * a; cam.top = view; cam.bottom = -view; cam.updateProjectionMatrix();
     cam.position.set(tgt.x + Math.sin(YAW) * Math.cos(PITCH) * 160, Math.sin(PITCH) * 160, tgt.z + Math.cos(YAW) * Math.cos(PITCH) * 160); cam.lookAt(tgt); cam.updateMatrixWorld();
     const pb = play ? (R.pb || 0) : 0, see = e => { const b = World.bAt(e.x >> 4, e.y >> 4); return b === 0 || b === pb; };
-    for (let i = 0; i < bld.length; i++) { const ins = i + 1 === pb; bld[i].shell.visible = !ins; bld[i].inside.visible = ins; }
+    const fl = play ? (G.floor || 0) : 0;
+    for (let i = 0; i < bld.length; i++) { const ins = i + 1 === pb, e = bld[i]; e.shell.visible = !ins; e.inside.visible = ins; if (e.fl) for (let f = 0; f < 3; f++) e.fl[f].visible = f === fl; }
+    bridgeG.visible = play && !!G.links.mp; for (const p of pads) p.g.visible = play && !!G.links[p.k] && fl === 0 && (p.b === 0 || p.b === pb);
     for (const k in gates) gates[k].visible = !World.gates[k].open;
     for (const f of figs.values()) f.used = false;
     for (const z of R.act) upd(z, () => mkFig(z.look), z.x, z.y, dt, { z: 1, fall: z.fall > 0, hide: !see(z), scale: z.type === 'boss' ? 2 : 0 });
     if (play) {
-      for (const n of R.npcs) upd(n, () => n.id === 'cat' ? mkCat() : mkFig(LOOK[n.id]), n.x, n.y, dt, { hide: n.hidden || !see(n) });
+      for (const n of R.npcs) upd(n, () => n.id === 'cat' ? mkCat() : mkFig(LOOK[n.id]), n.x, n.y, dt, { hide: n.hidden || !see(n) || fl > 0 });
       const pf = upd(G, () => mkFig(LOOK.player), G.x, G.y, dt, { hide: G.inVeh >= 0 || (R.inv > 0 && Math.floor(t * 20) % 2 === 1), face: (R.atk > 0 || R.mouse.t > 0) ? Math.PI / 2 - R.aim : null, swing: R.swing > 0 ? R.swing : 0 }); setWep(pf, G.cur);
       G.veh.forEach((v, i) => { const key = v.t + (v.up.armor ? 1 : 0); let o = vehs[i]; if (!o || o.key !== key) { if (o) scene.remove(o.g); o = vehs[i] = { key, g: car(v.t, v.up.armor) }; scene.add(o.g); } o.g.visible = !v.gone; o.g.position.set(v.x / 16, 0, v.y / 16); o.g.rotation.y = -v.a; });
       for (const p of picks) { p.g.visible = !G.taken[p.p.id] && (!p.p.b || p.p.b === pb); p.g.position.y = .45 + Math.sin(t * 3 + p.p.x) * .08; p.g.rotation.y = t * 1.5; }

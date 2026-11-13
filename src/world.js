@@ -94,6 +94,10 @@ const World = (() => {
     b = addB(119, 36, 16, 17, 'S', 'mall', 4, 126); safeB(b); spots.mall = sp(126, 45); spots.mallDoor = sp(126, 53);
     inn(b, 'bed', 121, 37, 6); inn(b, 'bed', 123, 37, 6); spots.mallBed = { x: 122 * 16 + 8, y: 37 * 16 + 14 };
     inn(b, 'radio', 127, 37); spots.radio = sp(127, 37);
+    inn(b, 'stairs', 133, 43); inner[inner.length - 1].all = 1; spots.stairs = sp(133, 43);
+    { const F1 = [], F2 = []; for (const x of [121, 123, 125, 127, 129]) { F1.push({ k: 'bed', tx: x, ty: 38 }, { k: 'bed', tx: x, ty: 47 }); } F1.push({ k: 'locker', tx: 131, ty: 37 }, { k: 'locker', tx: 132, ty: 37 }, { k: 'cupboard', tx: 131, ty: 50 });
+      for (const y of [39, 42]) for (const x of [121, 122, 123, 124]) F2.push({ k: 'shelf', tx: x, ty: y }); F2.push({ k: 'crate', tx: 121, ty: 46 }, { k: 'crate', tx: 122, ty: 46 }, { k: 'crate', tx: 121, ty: 48 }, { k: 'locker', tx: 124, ty: 47, stash: 1 }, { k: 'bed', tx: 130, ty: 38, clinic: 1 }, { k: 'med', tx: 132, ty: 38 }, { k: 'desk', tx: 131, ty: 41 });
+      spots._mall = { b: b.i + 1, x0: 120, y0: 37, x1: 133, y1: 51, floors: [F1, F2] }; }
     inn(b, 'desk', 124, 41); spots.board = sp(124, 41); spots.tunMall = sp(121, 50); spots.brMall = sp(123, 50); spots.tunMall2 = sp(125, 50); spots.tunHome = sp(23, 51); spots.brPharm = sp(125, 61); spots.tunArm = sp(194, 41);
     cont(b, 'shelf', 130, 37, 'mallfood'); cont(b, 'shelf', 132, 37); cont(b, 'crate', 133, 41);
     inn(b, 'bigen', 132, 50); block[I(131, 50)] = 1; spots.mallGen = sp(132, 50);

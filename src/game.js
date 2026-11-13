@@ -275,6 +275,7 @@ function buildObjs() {
   for (const b of World.buildings) { mg.fillStyle = LB[b.type] ? LB[b.type][1] : '#b3a88e'; mg.fillRect(b.x, b.y, b.w, b.h); }
   o.push({ x: S.homeBed.x, y: S.homeBed.y, label: ['نام', 'Sleep'], act: () => sleepAct(S.start) });
   o.push({ x: S.mallBed.x, y: S.mallBed.y, r: 30, label: ['نام', 'Sleep'], act: () => sleepAct({ x: S.mallBed.x, y: S.mallBed.y + 26 }) });
+  for (const b of World.inner) if (b.k === 'bed' && !World.safe[World.I(b.x >> 4, b.y >> 4)]) o.push({ x: b.x, y: b.y, r: 26, label: ['نام هنا (مو آمن مثل المقر)', 'Sleep here (not as safe as base)'], act: () => sleepAct(World.freeNear(b.x, b.y + 20), true) });
   o.push({ x: S.homeBench.x, y: S.homeBench.y, label: ['طوّر الملجأ', 'Upgrade shelter'], act: shelter });
   o.push({ x: S.radio.x, y: S.radio.y, label: ['الراديو', 'Radio'], act: radio });
   o.push({ x: S.mallBench.x, y: S.mallBench.y, label: ['الورشة', 'Workshop'], act: () => { if (!G.flags.gen) toast(tr('الورشة بلا كهرباء. المولدة عطلانة.', 'The workshop has no power. The generator is dead.')); else if (comp('mur').st === 'left') toast(tr('مرتضى راح.. ومحد يعرف يشتغل عليها.', 'Murtadha is gone... nobody else knows how to use it.')); else workshop(); } });
@@ -698,15 +699,17 @@ async function pepsi() {
 }
 
 // ---------------------------------------------------------------- day cycle
-async function sleepAct(spot) {
+async function sleepAct(spot, rough) {
   const h = G.time % 24; if (h >= 6 && h < 18 && G.en > 35) return toast(tr('بعد وكت.. ما نعسان. (تنام بعد المغرب أو إذا تعبان)', 'Not sleepy yet. (Sleep after sunset or when exhausted)'));
   const i = await say('me', tr('أنام لباجر الصبح؟', 'Sleep until morning?'), [tr('إي، نام', 'Yes, sleep'), tr('لا بعدين', 'Not yet')]);
-  if (i === 0) { G.safe = { x: spot.x, y: spot.y }; nextDay(true); }
+  if (i === 0) { G.safe = { x: spot.x, y: spot.y }; G.rough = rough ? 1 : 0; nextDay(true); }
 }
 async function nextDay(slept) {
   if (R.nexting) return; R.nexting = 1; R.busy++; $('#fade').classList.add('on'); await wait(650);
   const notes = [], dk = G.dayKills; G.dayKills = 0; G.day++; G.time = 6;
-  if (slept) { G.en = 100; G.hp = Math.min(100, G.hp + (G.shel.bar ? 45 : 25)); } else G.en = Math.max(G.en, 35);
+  const rough = slept && G.rough; G.rough = 0;
+  if (rough) { G.en = 80; G.hp = Math.min(100, G.hp + 8); notes.push(tr('نمت ببيت غريب. نص نومة.. كل شوية أكعد على صوت.', "Slept in a stranger's house. Half a sleep... kept waking at every noise.")); }
+  else if (slept) { G.en = 100; G.hp = Math.min(100, G.hp + (G.shel.bar ? 45 : 25)); } else G.en = Math.max(G.en, 35);
   G.food = Math.max(0, G.food - 8); G.water = Math.max(0, G.water - 10);
   if (G.shel.tank) { add('water'); notes.push(tr('خزان السطح نطاني قنينة ماي.', 'The roof tank gave me a bottle of water.')); }
   if (G.shel.garden) { add('dates', 2); notes.push(tr('الحديقة طلّعت تمر. الأرض بعدها تحبّنه.', 'The garden gave dates. The land still loves us.')); }
@@ -833,7 +836,7 @@ function update(dt) {
   if (G.food <= 0 || G.water <= 0) { G.hp -= dt * .55; if (G.hp <= 0) die(); } else if (G.food > 55 && G.water > 55 && G.hp < 100) G.hp = Math.min(100, G.hp + dt * .35);
   if (G.food < 20) tip('hungry' + G.day, 'جوعان! اضغط F تاكل وتشرب بسرعة.', 'Hungry! Press F to eat and drink quickly.');
   if (G.time >= 30) nextDay(false);
-  const h = G.time % 24; if (h >= 18.5 && h < 19 && G.time < 24) tip('night' + G.day, 'الدنيا صارت ليل.. الزومبي أخطر. ارجع للملجأ ونام.', 'Night is falling... zombies get worse. Head back to the shelter and sleep.');
+  const h = G.time % 24; if (h >= 18.5 && h < 19 && G.time < 24) tip('night' + G.day, 'الدنيا صارت ليل.. الزومبي أخطر. نام بالبيت أو بالمول، أو بأي بيت بيه جرباية.', 'Night is falling... zombies get worse. Sleep at home, at the mall, or in any house with a bed.');
   // safe-zone autosave + story triggers
   if (R.pSafe && !R.wasSafe) { const mall = pb && World.buildings[pb - 1].type === 'mall'; G.safe = mall ? { x: S.mallBed.x, y: S.mallBed.y + 26 } : { x: S.start.x, y: S.start.y }; if (mall && !G.flags.mall) { G.flags.mall = 1; toast(tr('مول الكرادة: مكان آمن. الزومبي ما يدخلون هنا.', 'Karrada mall: a safe place. Zombies do not come in here.'), 6000); } if (R.t - R.lastAuto > 25) save(true); }
   R.wasSafe = R.pSafe;

@@ -230,7 +230,7 @@ function save(auto) {
 function blank(name) {
   const comps = {}; for (const id of COMPS) comps[id] = { st: 'none', trust: 50, joinDay: 0, asked: 0 };
   const veh = [['bike', 'bike', 0], ['stuta', 'stuta', 0], ['kia', 'kia', 0], ['saipa', 'saipa', 0], ['truck', 'truck', 70]].map(([t, s, f]) => ({ t, x: S[s].x, y: S[s].y, a: 0, sp: 0, fuel: f, hp: VEH[t].hp, up: { armor: 0, tank: 0, horn: 0, seats: 0 } }));
-  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, fac: { fuel: 0, food: 0, water: 0, med: 0, arms: 0 }, links: {}, col: { pop: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
+  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, dis: {}, fac: { fuel: 0, food: 0, water: 0, med: 0, arms: 0 }, links: {}, col: { pop: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
 }
 function enterWorld() {
   World.gen(); View3D.build();
@@ -381,7 +381,7 @@ function killZ(z) {
   if (z.type === 'hassan') { G.flags.hassan = 1; add('samoon', 2); toast(tr('أبو حسن وكع.. وكيس الصمون صار إلك. الله يرحمه، جان يطلبني ألف دينار.', 'Abu Hassan is down... and his bag of bread is yours. Rest in peace — I owed him a thousand dinars.'), 6500); save(true); }
   else if (z.type === 'colonel') { G.flags.colonel = 1; add('key_police'); toast(tr('العقيد وكع. أخذت مفتاح مركز الشرطة من حزامه.', 'The Colonel is down. Took the police station key from his belt.'), 5500); }
   else if (z.type === 'boss') { G.flags.boss = 1; R.shake = 1; toast(tr('العملاق وكع! باب المخزن صار بلا حارس.', 'The giant is down! The warehouse door is unguarded.'), 6000); add('scrap', 6); save(true); }
-  else if (z.type === 'cop' && r < .28) got('ammo9', 3); else if (z.type === 'soldier' && r < .35) got('ammo7', 8); else if (z.type === 'vendor' && r < .22) got('dates'); else if (z.type === 'gen' && r < .5) got('parts'); else if (r < .2) got('scrap');
+  else if (z.type === 'cop' && r < .28) got('ammo9', 3); else if (z.type === 'soldier' && r < .35) got('ammo7', 8); else if (z.type === 'vendor' && r < .22) got('dates'); else if (z.type === 'gen' && r < .5) got('parts'); else if (r < .32) got('scrap');
 }
 
 // ---------------------------------------------------------------- player
@@ -498,6 +498,12 @@ function updComps(dt) {
 
 // ---------------------------------------------------------------- loot
 function openCont(c) {
+  if (G.looted[c.id] && c.kind === 'trunk') {
+    const left = 3 - (G.day - (G.dis[c.id] || -9)); if (left > 0) return toast(tr('فكّكت الي ينفك منها. ارجعلها بعد ' + left + ' أيام.', 'Stripped what could be stripped. Come back in ' + left + ' days.'));
+    if (G.en < 10) return toast(tr('تعبان.. ما بيّه حيل أفكّك.', 'Too tired to strip it.'));
+    G.dis[c.id] = G.day; G.en -= 8; G.time += .4; const n = 2 + ((Math.random() * 3) | 0); add('scrap', n); const pt = Math.random() < .4; if (pt) add('parts'); sfx('fix'); for (const z of R.zombies) if (hyp(z.x - G.x, z.y - G.y) < 150) z.alert = 5;
+    return toast('+ ' + L(ITEMS.scrap.n) + ' ×' + n + (pt ? tr('، قطع غيار ×1', ', spare parts ×1') : '') + tr('  (التفكيك يسوي صوت)', '  (stripping is noisy)'));
+  }
   if (G.looted[c.id]) return toast(tr('فارغ.. فتّشته قبل.', 'Empty. Already searched.'));
   G.looted[c.id] = G.day; G.lootN++; const got = [], r = Math.random; let msg = null;
   const g = (id, n = 1) => { add(id, n); got.push(L(ITEMS[id].n) + (n > 1 ? ' ×' + n : '')); };
@@ -625,7 +631,7 @@ const SC = {
   },
   async haji() {
     for (;;) {
-      const tds = [[{ can: 2 }, 'ammo9', 8], [{ scrap: 3 }, 'dates', 3], [{ scrap: 4 }, 'fuel', 1], [{ dates: 3 }, 'water', 2], [{ scrap: 5 }, 'medkit', 1]];
+      const tds = [[{ samoon: 2 }, 'scrap', 3], [{ water: 2 }, 'scrap', 3], [{ scrap: 4 }, 'parts', 1], [{ can: 2 }, 'ammo9', 8], [{ scrap: 3 }, 'dates', 3], [{ scrap: 4 }, 'fuel', 1], [{ dates: 3 }, 'water', 2], [{ scrap: 5 }, 'medkit', 1]];
       const o = tds.map(t => costStr(t[0]) + '  ←  ' + L(ITEMS[t[1]].n) + ' ×' + t[2]); o.push(tr('الله وياك حجي', 'Take care, Haji'));
       const i = await say('haji', tr('هلا بالعزيز. السوك ما يوكف حتى لو الدنيا خربت. شتريد تبادل؟', 'Welcome, dear. The market never stops, even when the world does. What will you trade?'), o);
       if (i >= tds.length) return; const t = tds[i];
@@ -808,7 +814,7 @@ async function nextDay(slept) {
     if (fid) { take(fid); c.trust = Math.min(100, c.trust + 4); } else { c.trust -= 14; notes.push(tr(nm + ' بقى بلا أكل.. وجهه ما يطمّن.', nm + ' went hungry... not a happy face.')); }
     if (c.trust <= 0) { c.st = 'left'; notes.push(L(LEAVE[id])); if (id === 'aj') { G.veh[2].gone = 1; if (G.inVeh === 2) G.inVeh = -1; } }
   }
-  for (const k in G.looted) if (!World.containers[k].fixed && Math.random() < .1) delete G.looted[k];
+  for (const k in G.looted) if (!World.containers[k].fixed && Math.random() < .18) delete G.looted[k];
   syncNpcs(); spawnAll(); await wait(250); $('#fade').classList.remove('on'); R.busy--; sfx('day');
   const lines = (DIARY[G.day] ? L(DIARY[G.day]) : L(pick(DGEN))).slice();
   if (!slept) lines.unshift(tr('ما نمت البارحة. عيوني مثل الطماطة.', "Didn't sleep last night. My eyes look like tomatoes."));
@@ -869,7 +875,7 @@ function updLapse(dt) {
 function findNear() {
   let best = null, bd = 1e9; const px = G.x, py = G.y - 4;
   const chk = (x, y, r, label, act, bias = 0) => { const d = hyp(x - px, y - py); if (d < r && d + bias < bd) { bd = d + bias; best = { x, y, label, act }; } };
-  for (const c of World.containers) if (Math.abs(c.x - px) < 34 && Math.abs(c.y - py) < 34) chk(c.x, c.y, c.kind === 'trunk' ? 30 : 25, tr('فتّش', 'Search'), () => openCont(c));
+  for (const c of World.containers) if (Math.abs(c.x - px) < 34 && Math.abs(c.y - py) < 34) chk(c.x, c.y, c.kind === 'trunk' ? 30 : 25, G.looted[c.id] && c.kind === 'trunk' ? tr('فكّك السيارة للسكراب', 'Strip the car for scrap') : tr('فتّش', 'Search'), () => openCont(c));
   for (const p of World.pickups) if (!G.taken[p.id]) chk(p.x, p.y, 20, tr('اخذ', 'Pick up'), () => takePickup(p));
   G.veh.forEach((v, i) => { if (!v.gone) chk(v.x, v.y, 26, tr('اركب ', 'Get on ') + L(VEH[v.t].n), () => enterVeh(i)); });
   for (const n of R.npcs) if (!n.hidden) chk(n.x, n.y - 4, n.follow ? 15 : 24, tr('احچي ويه ', 'Talk to ') + L(NPC[n.id].n), () => SC[n.id](), n.follow ? 30 : 0);

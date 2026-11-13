@@ -64,7 +64,7 @@ const View3D = (() => {
     // buildings: outer shell (walls + roof) and cut-away inside view
     for (const b of World.buildings) {
       const big = b.type === 'mall' || b.type === 'warehouse', shop = ['shop', 'butcher', 'pharmacy', 'bookshop'].includes(b.type);
-      const floors = b.type === 'mall' ? 3 : b.type === 'warehouse' ? 2 : (b.type === 'booth' || b.type === 'armory' || b.type === 'home') ? 1 : (rnd() < .45 ? 2 : 1) + (World.zoneOf(b.x) === 2 && rnd() < .5 ? 1 : 0), fh = 1.7, h = floors * fh;
+      const floors = b.type === 'mall' || b.type === 'hospital' ? 3 : b.type === 'camp' ? 1 : b.type === 'warehouse' ? 2 : (b.type === 'booth' || b.type === 'armory' || b.type === 'home') ? 1 : (rnd() < .45 ? 2 : 1) + (World.zoneOf(b.x) === 2 && rnd() < .5 ? 1 : 0), fh = 1.7, h = floors * fh;
       const cx = b.x + b.w / 2, cz = b.y + b.h / 2, shell = new THREE.Group(), inside = new THREE.Group(); scene.add(shell, inside); inside.visible = false; bld.push({ shell, inside });
       const mk = (len, kind) => { const tx = tex(b.st, kind).clone(); tx.needsUpdate = true; tx.repeat.set(Math.max(1, Math.round(len / 2.4)), kind === 'shop' ? 1 : floors); return new THREE.MeshStandardMaterial({ map: tx, roughness: .95 }); };
       const front = b.door === 'S' ? 4 : 5, ms = []; for (let i = 0; i < 6; i++) ms.push(i === 2 || i === 3 ? new THREE.MeshStandardMaterial({ map: ROOFS[(rnd() * ROOFS.length) | 0], roughness: 1 }) : mk(i < 2 ? b.h : b.w, 'win'));
@@ -76,6 +76,8 @@ const View3D = (() => {
       if (b.type === 'home' || b.type === 'mall') box(.5, .12, .12, new THREE.MeshStandardMaterial({ color: '#7fc24b', emissive: '#7fc24b', emissiveIntensity: 1.5 }), b.dx + b.dw / 2, 1.45, dz, shell, true);
       const pm = M(WALLC[b.st][1]), ph = .45, pt = .22;
       box(b.w, ph, pt, pm, cx, h + ph / 2, b.y + pt / 2, shell); box(b.w, ph, pt, pm, cx, h + ph / 2, b.y + b.h - pt / 2, shell); box(pt, ph, b.h, pm, b.x + pt / 2, h + ph / 2, cz, shell); box(pt, ph, b.h, pm, b.x + b.w - pt / 2, h + ph / 2, cz, shell);
+      if (b.type === 'hospital') { const cm = new THREE.MeshStandardMaterial({ color: '#d0312d', emissive: '#d0312d', emissiveIntensity: .5 }); box(2.6, .08, .75, cm, cx, h + .5, cz, shell, true); box(.75, .08, 2.6, cm, cx, h + .5, cz, shell, true); }
+      if (b.type === 'camp') { box(.07, 3.2, .07, M('#3a3a3a'), b.x + 1.2, h + 1.6, b.y + 1.2, shell); box(1, .55, .03, M('#5a6b3a'), b.x + 1.72, h + 2.9, b.y + 1.2, shell); for (const sx of [-1, 1]) box(1.6, .5, .5, M('#9a8a62'), b.dx + .5 + sx * 1.6, .25, b.door === 'S' ? b.y + b.h + .6 : b.y - .6, shell); }
       if (shop || big) box(b.w + .5, .1, 1.3, M(['#8a3a2e', '#35587a', '#3d6b4c', '#8f7a3a'][(rnd() * 4) | 0]), cx, fh + .05, b.door === 'S' ? b.y + b.h + .6 : b.y - .6, shell);
       const n = big ? 8 : 2 + ((rnd() * 3) | 0);
       for (let i = 0; i < n; i++) { const x = rr(b.x + 1, b.x + b.w - 1), z = rr(b.y + 1, b.y + b.h - 1), k = rnd();
@@ -211,6 +213,8 @@ const View3D = (() => {
     for (const f of figs.values()) f.used = false;
     for (const z of R.act) upd(z, () => mkFig(z.look), z.x, z.y, dt, { z: 1, fall: z.fall > 0, hide: !see(z), scale: z.type === 'boss' ? 2 : 0 });
     if (play) {
+      for (const b of (R.bodies || [])) upd(b, () => mkFig(b.look), b.x, b.y, dt, { z: 1, fall: true, hide: !see(b) || fl > 0 });
+      for (const d of (R.defs || [])) { const f = upd(d, () => mkFig(d.look), d.x, d.y, dt, { hide: !see(d) || fl > 0, face: d.face }); setWep(f, d.kind === 'soldier' ? 'rifle' : 'pipe'); }
       for (const n of R.npcs) upd(n, () => n.id === 'cat' ? mkCat() : mkFig(LOOK[n.id]), n.x, n.y, dt, { hide: n.hidden || !see(n) || fl > 0 });
       const pf = upd(G, () => mkFig(LOOK.player), G.x, G.y, dt, { hide: G.inVeh >= 0 || (R.inv > 0 && Math.floor(t * 20) % 2 === 1), face: (R.atk > 0 || R.mouse.t > 0) ? Math.PI / 2 - R.aim : null, swing: R.swing > 0 ? R.swing : 0 }); setWep(pf, G.cur);
       G.veh.forEach((v, i) => { const key = v.t + (v.up.armor ? 1 : 0); let o = vehs[i]; if (!o || o.key !== key) { if (o) scene.remove(o.g); o = vehs[i] = { key, g: car(v.t, v.up.armor) }; scene.add(o.g); } o.g.visible = !v.gone; o.g.position.set(v.x / 16, 0, v.y / 16); o.g.rotation.y = -v.a; });

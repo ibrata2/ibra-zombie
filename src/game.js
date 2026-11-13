@@ -50,7 +50,7 @@ const NPC = {
   umali: { n: ['أم علي', 'Um Ali'] }, book: { n: ['أبو الكتب', 'The Bookseller'] }
 };
 const COMPS = ['aj', 'noor', 'mur', 'cat', 'saif', 'sol'];
-for (let i = 0; i < 8; i++) NPC['sv' + i] = { n: ['ناجي', 'Survivor'] };
+for (let i = 0; i < 16; i++) NPC['sv' + i] = { n: ['ناجي', 'Survivor'] };
 for (let i = 0; i < 4; i++) NPC['st' + i] = { n: ['ناجي محاصر', 'Trapped survivor'] };
 const idleN = () => G.col.pop - Object.values(G.col.jobs).reduce((a, b) => a + (b || 0), 0);
 const JOBS = { soldier: ['جنود', 'Soldiers', 'يدافعون بالليل بالسلاح (يحتاج معسكر)', 'Defend at night with guns (needs a camp)'], medic: ['مسعفين', 'Medics', 'يعالجون الجرحى ويرجّعون الزومبي لوعيهم (يحتاج مستشفى)', 'Treat the wounded, revive zombies (needs hospital)'], guard: ['حرّاس', 'Guards', 'يقللون هجمات الزومبي عالمقر', 'Thin out the hordes at the base'], farm: ['مزارعين', 'Farmers', 'كل مزارع يأكّل نفرين', 'Each farmer feeds two people'], scav: ['جمّاعين', 'Scavengers', 'يجيبون أغراض كل يوم', 'Bring back supplies every day'], doc: ['باحثين', 'Researchers', 'يشتغلون على اللقاح', 'Work on the vaccine'] };
@@ -69,7 +69,7 @@ const LOOK = {
   book: { id: 'bk', shirt: '#6b4f2a', pants: '#444', hair: '#ccc', beard: 1 }
 };
 for (let i = 0; i < 4; i++) LOOK['st' + i] = { id: 'st' + i, skin: '#c99870', shirt: ['#8a6a3a', '#3a5a6a', '#6a3a3a', '#5a5a5a'][i], pants: '#33373f', hair: '#1b1410', hat: i === 2 ? 'hijab' : null, hatc: '#5a3a4a' };
-for (let i = 0; i < 8; i++) LOOK['sv' + i] = { id: 'sv' + i, skin: ['#c99870', '#b98860', '#d8a880'][i % 3], shirt: i % 4 === 1 ? null : ['#4a7a4a', '#8a3a3a', '#3b6ea5', '#6a5a8a', '#a05a2a'][i % 5], robe: i % 4 === 1 ? ['#e9e4d6', '#16161a'][i % 2] : null, pants: '#2c2f36', hair: '#1b1410', hat: i % 3 === 2 ? 'hijab' : null, hatc: ['#8e3b5e', '#16161a', '#3a5a8a'][i % 3], beard: i % 4 === 3, fat: i === 5 };
+for (let i = 0; i < 16; i++) LOOK['sv' + i] = { id: 'sv' + i, skin: ['#c99870', '#b98860', '#d8a880'][i % 3], shirt: i % 4 === 1 ? null : ['#4a7a4a', '#8a3a3a', '#3b6ea5', '#6a5a8a', '#a05a2a'][i % 5], robe: i % 4 === 1 ? ['#e9e4d6', '#16161a'][i % 2] : null, pants: '#2c2f36', hair: '#1b1410', hat: i % 3 === 2 ? 'hijab' : null, hatc: ['#8e3b5e', '#16161a', '#3a5a8a'][i % 3], beard: i % 4 === 3, fat: i === 5 };
 const ZT = { normal: { hp: 30, sp: 17, dmg: 7 }, vendor: { hp: 30, sp: 15, dmg: 7 }, cop: { hp: 42, sp: 19, dmg: 8 }, gen: { hp: 70, sp: 11, dmg: 10 }, fat: { hp: 80, sp: 12, dmg: 12 }, soldier: { hp: 55, sp: 20, dmg: 10 }, hassan: { hp: 26, sp: 14, dmg: 5 }, colonel: { hp: 170, sp: 18, dmg: 14 }, boss: { hp: 750, sp: 24, dmg: 22 } };
 const ZLINES = {
   normal: [['أأأأه..', 'مخخخ..', 'وين.. الكهرباء..', 'راتب.. راتب..', 'مممم.. تمن ومرق..', 'الوطني.. طفت..', 'نت.. ضعيف..'], ['Uuugh..', 'Braaains..', 'Where... is the power..', 'Salary... salary..', 'Mmm... rice and stew..', 'The grid... is out..', 'Wifi... weak..']],
@@ -274,7 +274,7 @@ function syncNpcs() {
   if (G.flags.umali) put('umali', { x: S.home.x + 28, y: S.home.y - 10 }); else if (G.day >= 4) put('umali', S.umali);
   put('book', S.book);
   for (const st of G.strand) put('st' + st.k, st);
-  for (let i = 0; i < Math.min(8, G.col.pop); i++) put('sv' + i, { x: S.mall.x - 70 + (i % 4) * 34, y: S.mall.y - 40 + ((i / 4) | 0) * 120 + (i % 2) * 14 });
+  for (let i = 0; i < Math.min(16, G.col.pop); i++) { const id = 'sv' + i, o = old.find(n => n.id === id); put(id, o || mallSpot()); const e = R.npcs[R.npcs.length - 1]; e.worker = 1; e.idx = i; if (o) { e.job = o.job; e.path = o.path; e.pi = o.pi; e.wt = o.wt; e.st = o.st; e.tgt = o.tgt; } }
 }
 function buildObjs() {
   const o = R.objs; o.length = 0;
@@ -484,6 +484,43 @@ async function die() {
 
 // ---------------------------------------------------------------- companions
 function seatsOf(v) { return VEH[v.t].seats + v.up.seats * 2 - 1; }
+// ---------------- survivors go to their jobs
+const JOBT = { soldier: ['جندي', 'Soldier'], guard: ['حارس', 'Guard'], scav: ['جمّاع', 'Scavenger'], farm: ['مزارع', 'Farmer'], doc: ['باحث', 'Researcher'], medic: ['مسعف', 'Medic'], idle: ['ناجي بلا شغل', 'Idle survivor'] };
+const JOBL = { soldier: [['واحد.. اثنين.. استعد!', 'السلاح نظيف، والقلب قوي.'], ['One... two... ready!', 'Rifle clean, heart strong.']], guard: [['كلشي هادي بالباب.', 'محد يعبر بلا ما أشوفه.'], ['All quiet at the door.', 'Nobody passes without me seeing.']], scav: [['طالع أدوّر أغراض.', 'لكيت شي! خلّي أشيله.'], ['Heading out to scavenge.', 'Found something! Let me grab it.']], farm: [['التربة هنا زينة.', 'الطماطة تحتاج ماي.'], ['Good soil here.', 'The tomatoes need water.']], doc: [['العينة رقم ١٢.. فشلت. نعيد.', 'قريبين من اللقاح.. أحس.'], ['Sample #12... failed. Again.', 'We are close to a vaccine... I feel it.']], medic: [['وين الجرحى؟', 'الضماد خلص.. نحتاج دوه.'], ['Where are the wounded?', 'Out of bandages... we need medicine.']], idle: [['منتظر شغل.. وزّعوني!', 'ماكو شي أسويه؟'], ['Waiting for work... assign me!', 'Nothing for me to do?']] };
+function jobOf(i) { const j = G.col.jobs; let k = 0; for (const name of ['soldier', 'guard', 'scav', 'farm', 'doc', 'medic']) { k += j[name] || 0; if (i < k) return name; } return 'idle'; }
+function mallSpot() { return World.freeNear((121 + Math.random() * 11) * 16, (39 + Math.random() * 10) * 16); }
+function bldSpot(b) { return World.freeNear((b.x + 1 + Math.random() * (b.w - 2)) * 16, (b.y + 1 + Math.random() * (b.h - 2)) * 16); }
+function doorOut(b, spread) { const y = b.door === 'S' ? b.dy + 1 : b.dy - 1; return World.freeNear((b.dx + (Math.random() - .5) * spread) * 16 + 8, (y + (b.door === 'S' ? 1 : -1) * Math.random() * 2) * 16 + 8); }
+function farmSpot() { if (!R.farm) { const cx = 127, cy = 31; outer: for (let r = 0; r < 20; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const x = cx + dx, y = cy + dy, t = World.tiles[World.I(x, y)]; if ((t === 0 || t === 8) && !World.bAt(x, y) && !World.block[World.I(x, y)]) { R.farm = { x: x * 16, y: y * 16 }; break outer; } } R.farm = R.farm || S.mallDoor; } return World.freeNear(R.farm.x + (Math.random() - .5) * 48, R.farm.y + (Math.random() - .5) * 48); }
+function workSpot(job, phase) {
+  const mall = World.buildings[S._mall.b - 1], B = id => World.buildings.find(b => b.type === id), night = G.time % 24 >= 20 || G.time % 24 < 6;
+  if (night && job !== 'guard') return mallSpot();
+  if (job === 'guard') return doorOut(mall, 6);
+  if (job === 'soldier') return G.conv.camp != null ? doorOut(World.buildings[G.conv.camp], 5) : doorOut(mall, 8);
+  if (job === 'farm') return farmSpot();
+  if (job === 'doc' || job === 'medic') { const h = G.conv.hosp != null ? World.buildings[G.conv.hosp] : B('pharmacy'); return h ? bldSpot(h) : mallSpot(); }
+  if (job === 'scav') { if (phase === 'back') return mallSpot(); const zs = [2]; if (G.flags.g1) zs.push(1); if (G.flags.g3) zs.push(3); for (let t = 0; t < 12; t++) { const p = World.randOutdoor(pick(zs)); if (p && hyp(p.x - S.mallDoor.x, p.y - S.mallDoor.y) < 640) return p; } return doorOut(mall, 10); }
+  return mallSpot();
+}
+function findPath(fx, fy, tx, ty) {
+  const W = World.W, H = World.H, N = W * H, prev = R.pprev || (R.pprev = new Int32Array(N)), q = R.pq || (R.pq = new Int32Array(N)); prev.fill(-2);
+  const s = fx + fy * W, g = tx + ty * W; let h = 0, t = 0; q[t++] = s; prev[s] = -1;
+  while (h < t) { const c = q[h++]; if (c === g) break; const x = c % W, y = (c / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 1 || ny < 1 || nx >= W - 1 || ny >= H - 1) continue; const n = nx + ny * W; if (prev[n] !== -2 || World.solid(nx, ny)) continue; prev[n] = c; q[t++] = n; } }
+  if (prev[g] === -2) return null; const path = []; for (let c = g; c !== -1; c = prev[c]) path.push(c); path.reverse();
+  const out = []; for (let i = 1; i < path.length; i++) if (i === path.length - 1 || i % 2 === 0) out.push({ x: (path[i] % W) * 16 + 8, y: ((path[i] / W) | 0) * 16 + 8 }); return out;
+}
+function updWorkers(dt) {
+  let budget = 2;
+  for (const e of R.npcs) {
+    if (!e.worker) continue; const job = jobOf(e.idx);
+    if (job !== e.job) { e.job = job; e.path = null; e.wt = 0; e.st = 'go'; }
+    if (e.wt > 0) { e.wt -= dt; e.fr = 0; continue; }
+    if (!e.path) { if (budget-- <= 0) continue; const phase = e.job === 'scav' && e.st === 'out' ? 'back' : 'go', p = workSpot(e.job, phase), path = findPath(e.x >> 4, e.y >> 4, p.x >> 4, p.y >> 4); e.path = path && path.length ? path : [p]; e.pi = 0; e.st = phase === 'back' ? 'back' : (e.job === 'scav' ? 'out' : 'go'); continue; }
+    const w = e.path[e.pi], dx = w.x - e.x, dy = w.y - e.y, d = hyp(dx, dy), sp = (e.job === 'scav' ? 58 : 44) * dt;
+    if (d < 3) { e.pi++; if (e.pi >= e.path.length) { e.path = null; e.wt = e.job === 'scav' ? (e.st === 'out' ? rand(4, 7) : rand(6, 10)) : rand(3, 8); if (e.st === 'back') e.st = 'go'; if (hyp(e.x - G.x, e.y - G.y) < 260 && Math.random() < .35) bubble(e, pick(L(JOBL[e.job])), 2.6); } continue; }
+    e.x += dx / d * Math.min(sp, d); e.y += dy / d * Math.min(sp, d); e.fr += dt * 8; e.dir = dirOf(dx, dy);
+  }
+}
 function updComps(dt) {
   let k = 0; const riding = G.inVeh >= 0, seats = riding ? seatsOf(G.veh[G.inVeh]) : 0;
   for (const e of R.npcs) {
@@ -668,7 +705,7 @@ const SC = {
     return say('book', pick(L([['خير جليس بالزمان كتاب.. وخير سلاح بوري.', 'إذا لكيت زومبي يقرا.. عوفه، هذا واحد منّا.', 'الكتب ما تنباع هالأيام. مثل قبل بالضبط.'], ['The best companion is a book... the best weapon, a pipe.', "If you see a zombie reading... leave him, he's one of us.", "Books don't sell these days. Exactly like before."]])));
   }
 };
-for (let i = 0; i < 8; i++) SC['sv' + i] = async () => { if (await say('sv' + i, pick(L([['الحمد لله لكينا مكان. سمعنا صوتك بالراديو.', 'اني جنت معلم.. هسه أحرس باب مول. الدنيا دوّارة.', 'شكو أكل اليوم؟ لا تكلي تمر مرة ثانية.', 'إذا تحتاج شي كول. إحنا أهل.', 'الزومبيات برّه تزيد كل ما نزيد إحنا.. يشمّون الأمل.'], ['Thank God we found a place. We heard your voice on the radio.', 'I was a teacher... now I guard a mall door. Life is funny.', "What's for dinner? Don't say dates again.", 'If you need anything, say so. We are family now.', 'The more of us there are, the more zombies gather outside... they smell hope.']])), [tr('وزّع الشغل على الناس', 'Assign jobs to people'), tr('ولا شي', 'Never mind')]) === 0) colonyPanel(); };
+for (let i = 0; i < 16; i++) SC['sv' + i] = async () => { if (await say('sv' + i, pick(L([['الحمد لله لكينا مكان. سمعنا صوتك بالراديو.', 'اني جنت معلم.. هسه أحرس باب مول. الدنيا دوّارة.', 'شكو أكل اليوم؟ لا تكلي تمر مرة ثانية.', 'إذا تحتاج شي كول. إحنا أهل.', 'الزومبيات برّه تزيد كل ما نزيد إحنا.. يشمّون الأمل.'], ['Thank God we found a place. We heard your voice on the radio.', 'I was a teacher... now I guard a mall door. Life is funny.', "What's for dinner? Don't say dates again.", 'If you need anything, say so. We are family now.', 'The more of us there are, the more zombies gather outside... they smell hope.']])), [tr('وزّع الشغل على الناس', 'Assign jobs to people'), tr('ولا شي', 'Never mind')]) === 0) colonyPanel(); };
 async function broadcast() {
   const c = G.col; if (c.bDay === G.day) return say(tr('الراديو', 'Radio'), tr('بثّيت اليوم. خلّي النداء يوصل.. جرّب باجر.', 'You already broadcast today. Let the call travel... try tomorrow.'));
   if (c.pop >= colCap()) return say('me', tr('ماكو مكان بعد.. المول يشيل ' + colCap() + ' بس. لازم أفتح طابق ثاني من الدرج.', 'No more room... the mall holds only ' + colCap() + '. I need to open another floor from the stairs.'));
@@ -1000,7 +1037,7 @@ function findNear() {
   for (const p of World.pickups) if (!G.taken[p.id] && !G.floor) chk(p.x, p.y, 20, tr('اخذ', 'Pick up'), () => takePickup(p));
   G.veh.forEach((v, i) => { if (!v.gone) chk(v.x, v.y, 26, tr('اركب ', 'Get on ') + L(VEH[v.t].n), () => enterVeh(i)); });
   if (!G.floor) for (const b of R.bodies) chk(b.x, b.y, 22, tr('شيل الجثة للمستشفى', 'Carry the body to the hospital'), () => { if ((G.inv.zbody || 0) >= 3) return toast(tr('ما أكدر أشيل أكثر من ٣ جثث.. ظهري.', "Can't carry more than 3 bodies... my back.")); add('zbody'); R.bodies.splice(R.bodies.indexOf(b), 1); sfx('pick'); tip('body', 'وصّل الجثث لباب المستشفى. المسعفين والباحثين يحاولون يرجعوهم ناس.', 'Bring the bodies to the hospital door. Medics and researchers will try to bring them back.'); });
-  for (const n of R.npcs) if (!n.hidden && !G.floor) chk(n.x, n.y - 4, n.follow ? 15 : 24, tr('احچي ويه ', 'Talk to ') + L(NPC[n.id].n), () => SC[n.id](), n.follow ? 30 : 0);
+  for (const n of R.npcs) if (!n.hidden && !G.floor) chk(n.x, n.y - 4, n.follow ? 15 : 24, tr('احچي ويه ', 'Talk to ') + (n.worker ? L(JOBT[n.job || 'idle']) : L(NPC[n.id].n)), () => SC[n.id](), n.follow ? 30 : 0);
   for (const o of R.objs) if ((o.fl === 'all' || (o.fl || 0) === G.floor) && (!o.hide || !o.hide())) chk(o.x, o.y, o.r || 24, L(o.label), o.act);
   R.near = best;
 }
@@ -1044,7 +1081,7 @@ function update(dt) {
   if (R.busy > 0) return;
   if (R.atk > 0) R.atk -= dt; if (R.swing > 0) R.swing -= dt; if (R.inv > 0) R.inv -= dt; if (R.mouse.t > 0) R.mouse.t -= dt;
   const pb = World.bAt(G.x >> 4, G.y >> 4); R.pb = G.inVeh >= 0 ? 0 : pb; R.pInside = !!R.pb; R.pSafe = World.safe[World.I(G.x >> 4, G.y >> 4)] === 1 && G.inVeh < 0;
-  updPlayer(dt); updZombies(dt); updComps(dt);
+  updPlayer(dt); updZombies(dt); updComps(dt); updWorkers(dt);
   if (G.inVeh < 0) findNear(); else R.near = null;
   // needs & time
   G.time += dt / 20; const hr = dt / 20;
@@ -1255,5 +1292,5 @@ function loop(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; 
 View3D.init($('#gl')); resize(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); renderMenu(); requestAnimationFrame(loop);
 setTimeout(() => checkUpdate(false), 1500);
 window.__izFast = () => setInterval(() => { try { update(1 / 60); } catch (e) { console.error(e); } }, 16);
-window.__iz = { startRaid, endRaid, convert, hospMenu, strandDay, stairsMenu, stashPanel, applyFloor, colCap, baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
+window.__iz = { update, updComps, findNear, hud, LOOK, zlook, syncNpcs, updWorkers, jobOf, findPath, startRaid, endRaid, convert, hospMenu, strandDay, stairsMenu, stashPanel, applyFloor, colCap, baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
 })();

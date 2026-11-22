@@ -387,7 +387,7 @@ function updZombies(dt, title) {
 }
 function zAttack(z) {
   if (G.inVeh >= 0) { const v = G.veh[G.inVeh]; v.hp -= z.s.dmg * .4 * (1 - v.up.armor * .3); sfx('hit'); return; }
-  if (R.inv > 0) return; G.hp -= z.s.dmg; R.inv = .5; R.shake = z.type === 'giant' ? .7 : .25; sfx('hurt'); $('#hurt').style.opacity = 1; setTimeout(() => $('#hurt').style.opacity = 0, 160);
+  if (R.inv > 0) return; G.hp -= z.s.dmg * (1 - gearCut()); R.inv = .5; R.shake = z.type === 'giant' ? .7 : .25; sfx('hurt'); $('#hurt').style.opacity = 1; setTimeout(() => $('#hurt').style.opacity = 0, 160);
   if (G.hp <= 0) die();
 }
 function hitZ(z, dmg, a, kb) {
@@ -400,13 +400,13 @@ function killZ(z) {
   for (let j = 0; j < 6; j++) R.fx.push({ k: 'puff', x: z.x + rand(-5, 5), y: z.y - rand(2, 14), t: rand(.25, .6), c: j % 2 ? '#5d7a3a' : '#7a1a1a' });
   if (R.raid && z.raid) R.raid.killed++;
   if (z.type === 'ali') { add('alibody'); G.flags.aliQ = 2; toast(tr('علي وكع! هذا هو.. فانيلة المنتخب والنظارات. شلته على كتفي. وصّله لنور بالمستشفى.', 'Ali is down! That is him... green jersey and glasses. On my shoulder now. Take him to Noor at the hospital.'), 8000); save(true); return; }
-  if (z.type === 'giant') { R.shake = .8; add('parts', 2); add('scrap', 4); G.flags.giants = (G.flags.giants || 0) + 1; toast(z.big ? tr('«أبو كرش» وكع! الأرض ارتاحت. بغداد كلها سمعت الصوت.', '«Abu Karsh» is down! The ground can rest. All of Baghdad heard it.') : tr('الضخم وكع! (+قطع غيار ×٢ +سكراب ×٤)', 'The giant is down! (+parts ×2 +scrap ×4)'), 6500); if (z.big) { G.flags.bigBoss = 1; save(true); } }
+  if (z.type === 'giant') { R.shake = .8; G.flags.giants = (G.flags.giants || 0) + 1; toast(z.big ? tr('«أبو كرش» وكع! الأرض ارتاحت. بغداد كلها سمعت الصوت.', '«Abu Karsh» is down! The ground can rest. All of Baghdad heard it.') : tr('الضخم وكع! فتّش جيوبه..', 'The giant is down! Check his pockets...'), 4000); if (z.big) { G.flags.bigBoss = 1; save(true); } }
   if (op('hosp') && !z.guard && !['boss', 'colonel', 'hassan', 'giant'].includes(z.type) && R.bodies.length < 30) R.bodies.push({ x: z.x, y: z.y, look: z.look, t: 150 });
   G.kills++; G.dayKills++; const r = Math.random(), got = (id, n = 1) => { add(id, n); toast('+ ' + L(ITEMS[id].n) + (n > 1 ? ' ×' + n : ''), 2200); };
   if (z.type === 'hassan') { G.flags.hassan = 1; add('samoon', 2); toast(tr('أبو حسن وكع.. وكيس الصمون صار إلك. الله يرحمه، جان يطلبني ألف دينار.', 'Abu Hassan is down... and his bag of bread is yours. Rest in peace — I owed him a thousand dinars.'), 6500); save(true); }
   else if (z.type === 'colonel') { G.flags.colonel = 1; add('key_police'); toast(tr('العقيد وكع. أخذت مفتاح مركز الشرطة من حزامه.', 'The Colonel is down. Took the police station key from his belt.'), 5500); }
   else if (z.type === 'boss') { G.flags.boss = 1; R.shake = 1; toast(tr('العملاق وكع! باب المخزن صار بلا حارس.', 'The giant is down! The warehouse door is unguarded.'), 6000); add('scrap', 6); save(true); }
-  else if (z.type === 'cop' && r < .28) got('ammo9', 3); else if (z.type === 'soldier' && r < .35) got('ammo7', 8); else if (z.type === 'vendor' && r < .22) got('dates'); else if (z.type === 'gen' && r < .5) got('parts'); else if (r < .32) got('scrap');
+  else dropLoot(z);
 }
 
 // ---------------------------------------------------------------- player
@@ -484,6 +484,8 @@ function horn() {
 }
 function useItem(id) {
   const it = ITEMS[id]; if (!has(id)) return;
+  if (it.gear) return wearGear(id);
+  if (it.wep) { take(id); G.weps[it.wep] = WEAPONS[it.wep].dur; G.cur = it.wep; sfx('fix'); return toast(tr('صار عندك ' + L(WEAPONS[it.wep].n) + '.', 'You now have a ' + L(WEAPONS[it.wep].n) + '.')); }
   if (it.fuel) { const i = G.inVeh >= 0 ? G.inVeh : nearVeh(); if (i < 0 || !VEH[G.veh[i].t].tank) return toast(tr('لازم تكون يم سيارة بيها خزان.', 'You need to be next to a vehicle with a tank.')); const v = G.veh[i]; v.fuel = Math.min(maxFuel(v), v.fuel + it.fuel); take(id); sfx('fix'); return toast(tr('عبّيت ' + L(VEH[v.t].n) + ' بانزين.', 'Refuelled the ' + L(VEH[v.t].n) + '.')); }
   if (it.food || it.water || it.hp || it.en) { take(id); G.food = Math.min(100, G.food + (it.food || 0)); G.water = Math.min(100, G.water + (it.water || 0)); G.hp = Math.min(100, G.hp + (it.hp || 0)); G.en = Math.min(100, G.en + (it.en || 0)); sfx('eat'); if (id === 'dolma') toast(tr('دولمة.. رجعتلي الروح.', 'Dolma... my soul is back.')); }
 }
@@ -695,6 +697,12 @@ const SC = {
     else { if (i === 0) toast(tr('ما عندك إسعافات!', "You don't have a medkit!")); add('key_armory'); await say('sol', tr('هاك.. اخذه. اني أبقى هنا لحد ما أتحسن. (ارجعله بإسعافات إذا تريده وياك)', "Here... take it. I'll stay until I heal. (Come back with a medkit if you want him along)")); }
   },
   async haji() {
+    const mode = await say('haji', tr('هلا بالعزيز. السوك ما يوكف حتى لو الدنيا خربت. شتريد؟  (فلوسك: ' + (G.inv.dinar || 0).toLocaleString('en') + ' دينار)', 'Welcome, dear. The market never stops, even when the world does. What do you want?  (money: ' + (G.inv.dinar || 0).toLocaleString('en') + ' dinars)'), [tr('أشتري بالفلوس', 'Buy with money'), tr('أبيع أغراض', 'Sell items'), tr('أبادل غرض بغرض', 'Swap items'), tr('الله وياك حجي', 'Take care, Haji')]);
+    if (mode === 3) return;
+    if (mode < 2) for (;;) { const tds = mode === 0 ? HAJI_BUY : HAJI_SELL, o = tds.map(t => (mode === 0 ? (ICON[t[1]] || '') + ' ' + L(ITEMS[t[1]].n) + ' ×' + t[2] + '  ←  ' + t[0].dinar.toLocaleString('en') + tr(' دينار', ' dinars') : (ICON[Object.keys(t[0])[0]] || '') + ' ' + L(ITEMS[Object.keys(t[0])[0]].n) + ' (' + tr('عندك ', 'have ') + (G.inv[Object.keys(t[0])[0]] || 0) + ')  ←  ' + t[2].toLocaleString('en') + tr(' دينار', ' dinars'))); o.push(tr('رجوع', 'Back'));
+      const i = await say('haji', tr('فلوسك: ' + (G.inv.dinar || 0).toLocaleString('en') + ' دينار', 'Money: ' + (G.inv.dinar || 0).toLocaleString('en') + ' dinars'), o); if (i >= tds.length) return SC.haji(); const t = tds[i];
+      if (!afford(t[0])) { await say('haji', mode === 0 ? tr('عمّي الفلوس ما تكفي. الدَّين ممنوع والعتب مرفوع.', "Son, not enough money. No credit, no hard feelings.") : tr('ما عندك هذا الغرض يا معوّد.', "You don't have that, my friend.")); continue; }
+      pay(t[0]); add(t[1], t[2]); sfx('pick'); toast('+ ' + (ICON[t[1]] || '') + ' ' + L(ITEMS[t[1]].n) + ' ×' + t[2].toLocaleString('en')); }
     for (;;) {
       const tds = [[{ samoon: 2 }, 'scrap', 3], [{ water: 2 }, 'scrap', 3], [{ scrap: 4 }, 'parts', 1], [{ can: 2 }, 'ammo9', 8], [{ scrap: 3 }, 'dates', 3], [{ scrap: 4 }, 'fuel', 1], [{ dates: 3 }, 'water', 2], [{ scrap: 5 }, 'medkit', 1]];
       const o = tds.map(t => costStr(t[0]) + '  ←  ' + L(ITEMS[t[1]].n) + ' ×' + t[2]); o.push(tr('الله وياك حجي', 'Take care, Haji'));
@@ -903,7 +911,7 @@ function stashPanel() {
       box.appendChild(el('p', tr('الأكل الي بالمخزن ياكلون منه الناجين قبل ما ياخذون من حقيبتك.', 'Survivors eat from stored food before taking from your bag.')));
       const c = el('div', null, 'col'); c.appendChild(btn(tr('خزّن كل الأكل والماي والمواد', 'Store all food, water and materials'), () => { for (const id of Object.keys(G.inv)) if (!ITEMS[id].q && !/^ammo/.test(id)) mv(G.inv, G.stash, id, G.inv[id]); draw(); }, 'gold')); box.appendChild(c);
       for (const [title, src, dst, lab] of [[tr('بحقيبتك', 'In your bag'), G.inv, G.stash, tr('خزّن', 'Store')], [tr('بالمخزن', 'In storage'), G.stash, G.inv, tr('اخذ', 'Take')]]) { box.appendChild(el('h3', title)); const ids = Object.keys(src).filter(id => !ITEMS[id].q); if (!ids.length) box.appendChild(el('p', tr('فارغ.', 'Empty.')));
-        for (const id of ids) { const row = el('div', null, 'row'), bs = el('span'); bs.append(btn(lab + ' 1', () => { mv(src, dst, id, 1); draw(); }), ' ', btn(lab + tr(' الكل', ' all'), () => { mv(src, dst, id, src[id]); draw(); })); row.append(el('span', L(ITEMS[id].n) + ' ×' + src[id]), bs); box.appendChild(row); } } };
+        for (const id of ids) { const row = el('div', null, 'row'), bs = el('span'); bs.append(btn(lab + ' 1', () => { mv(src, dst, id, 1); draw(); }), ' ', btn(lab + tr(' الكل', ' all'), () => { mv(src, dst, id, src[id]); draw(); })); { const sp = el('span'); sp.append(icon(id, 26), L(ITEMS[id].n) + ' ×' + src[id]); row.append(sp, bs); } box.appendChild(row); } } };
     draw();
   });
 }
@@ -1200,8 +1208,9 @@ function invPanel() {
       box.appendChild(el('h3', tr('الأسلحة', 'Weapons')));
       for (const w of WORDER) { if (w !== 'fist' && G.weps[w] == null) continue; const d = WEAPONS[w], row = el('div', null, 'row'), nm = el('span', L(d.n) + '  '); nm.appendChild(el('small', d.gun ? tr('رصاص ', 'ammo ') + (G.inv[d.ammo] || 0) : d.dur ? G.weps[w] + '/' + d.dur : '')); row.append(nm, G.cur === w ? el('small', tr('✔ مجهّز', '✔ equipped')) : btn(tr('جهّز', 'Equip'), () => { G.cur = w; draw(); })); box.appendChild(row); }
       box.appendChild(el('h3', tr('الأغراض', 'Items'))); const ids = Object.keys(G.inv); if (!ids.length) box.appendChild(el('p', tr('الحقيبة فارغة.. مثل الثلاجة.', 'The bag is empty... like the fridge.')));
-      for (const id of ids) { const it = ITEMS[id], row = el('div', null, 'row'), nm = el('span', L(it.n) + ' ×' + G.inv[id] + '  '); const eff = [it.food && tr('أكل +', 'food +') + it.food, it.water && tr('ماي +', 'water +') + it.water, it.hp && tr('صحة +', 'health +') + it.hp, it.en && tr('طاقة +', 'energy +') + it.en, it.fuel && tr('بانزين +', 'fuel +') + it.fuel, it.d && L(it.d)].filter(Boolean).join(' · '); nm.appendChild(el('small', eff)); row.appendChild(nm); if (it.food || it.water || it.hp || it.en || it.fuel) row.appendChild(btn(tr('استعمل', 'Use'), () => { useItem(id); hud(); draw(); })); box.appendChild(row); }
+      for (const id of ids) { const it = ITEMS[id], row = el('div', null, 'row'), nm = el('span'); nm.append(icon(id), L(it.n) + ' ×' + G.inv[id].toLocaleString('en') + '  '); const eff = [it.food && tr('أكل +', 'food +') + it.food, it.water && tr('ماي +', 'water +') + it.water, it.hp && tr('صحة +', 'health +') + it.hp, it.en && tr('طاقة +', 'energy +') + it.en, it.fuel && tr('بانزين +', 'fuel +') + it.fuel, it.d && L(it.d)].filter(Boolean).join(' · '); nm.appendChild(el('small', eff)); row.appendChild(nm); if (it.gear || it.wep) row.appendChild(btn(it.gear ? tr('البس', 'Wear') : tr('جهّز', 'Equip'), () => { useItem(id); draw(); })); else if (it.food || it.water || it.hp || it.en || it.fuel) row.appendChild(btn(tr('استعمل', 'Use'), () => { useItem(id); hud(); draw(); })); box.appendChild(row); }
       box.appendChild(el('h3', tr('الإحصائيات', 'Stats')));
+      { const g = G.gear || {}; box.appendChild(el('p', tr('فلوسك: ', 'Money: ') + (G.inv.dinar || 0).toLocaleString('en') + tr(' دينار', ' dinars') + '   ·   ' + tr('لابس: ', 'Wearing: ') + ([g.helmet && L(ITEMS.helmet.n), g.vest && L(ITEMS.vest.n)].filter(Boolean).join(tr('، ', ', ')) || tr('ملابس عادية', 'regular clothes')))); }
       box.appendChild(el('p', tr('الأيام: ', 'Days: ') + G.day + '   ·   ' + tr('زومبي طايح: ', 'Zombies dropped: ') + G.kills + '   ·   ' + tr('أوراق مشكوكة: ', 'Torn pages: ') + G.pages.length + '/5'));
       const s = G.shel, sh = [s.bar && tr('شبابيك مسدودة', 'boarded windows'), s.tank && tr('خزان ماي', 'water tank'), s.garden && tr('حديقة', 'garden'), s.gen && tr('مولدة', 'generator')].filter(Boolean); if (sh.length) box.appendChild(el('p', tr('الملجأ: ', 'Shelter: ') + sh.join(tr('، ', ', '))));
     }; draw();
@@ -1640,9 +1649,42 @@ function lifeTick(dt) {
   if (R.aliScene && R.busy === 0 && !R.nexting) aliScene();
 }
 
+// ---------------------------------------------------------------- loot on zombies, money, gear, item icons
+Object.assign(ITEMS, {
+  dinar: { n: ['دينار', 'Dinars'], d: ['فلوس.. حتى بنهاية العالم حجي كاظم يقبلها', 'Money... even at the end of the world Haji takes it'] },
+  phone: { n: ['موبايل', 'Mobile phone'], d: ['ينباع لحجي كاظم', 'Sells to Haji Kadhim'] }, watch: { n: ['ساعة يد', 'Wristwatch'], d: ['ينباع لحجي كاظم', 'Sells to Haji Kadhim'] },
+  cig: { n: ['باكيت جكاير', 'Pack of cigarettes'], d: ['عملة السوك الحقيقية', 'The real market currency'] }, gold: { n: ['خاتم ذهب', 'Gold ring'], d: ['غالي.. حجي يحبه', 'Valuable... Haji loves it'] },
+  shirt: { n: ['ملابس نظيفة', 'Clean clothes'], en: 18, d: ['تبدّل وترجع إنسان', 'Change and feel human again'] },
+  helmet: { n: ['خوذة', 'Helmet'], gear: 'helmet', d: ['تلبسها: ضرر أقل ٢٠٪', 'Wear it: 20% less damage'] }, vest: { n: ['سترة واقية', 'Body armor'], gear: 'vest', d: ['تلبسها: ضرر أقل ٣٠٪', 'Wear it: 30% less damage'] },
+  knife: { n: ['سچينة مطبخ', 'Kitchen knife'], wep: 'cleaver', d: ['سلاح: ساطور', 'Weapon: cleaver'] }
+});
+const ICON = { samoon: '🥖', can: '🥫', dates: '🌴', dolma: '🍲', water: '💧', tea: '🍵', bandage: '🩹', medkit: '🧰', fuel: '⛽', scrap: '🔩', parts: '⚙️', ammo9: '🔸', ammo7: '🔶', medicine: '💊', key_gate: '🔑', key_police: '🔑', key_armory: '🔑', key_truck: '🔑', cutter: '✂️', book: '📕', zbody: '🧟', alibody: '🧟', kettle: '🫖', jacket: '🧥', invoice: '🧾', veg: '🍅', dinar: '💵', phone: '📱', watch: '⌚', cig: '🚬', gold: '💍', shirt: '👕', helmet: '🪖', vest: '🦺', knife: '🔪' };
+function icon(id, sz) { const w = el('span', null, 'ico'); w.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:' + (sz || 30) + 'px;height:' + (sz || 30) + 'px;margin-inline-end:8px;vertical-align:middle;font-size:' + Math.round((sz || 30) * .68) + 'px;background:rgba(255,255,255,.06);border:1px solid rgba(232,207,122,.25);border-radius:6px;'; const im = new Image(); im.width = im.height = (sz || 30) - 2; im.style.cssText = 'image-rendering:auto;object-fit:contain'; im.onerror = () => { im.remove(); w.textContent = ICON[id] || '▪'; }; im.src = 'icons/' + id + '.png'; w.appendChild(im); return w; }
+const ZDROP = {
+  normal: [['dinar', .35, 1000, 5000], ['phone', .07], ['cig', .1], ['watch', .04], ['shirt', .05], ['water', .07], ['scrap', .14]],
+  vendor: [['dinar', .5, 2000, 9000], ['dates', .2, 1, 2], ['samoon', .15], ['veg', .12, 1, 2], ['cig', .1]],
+  cop: [['ammo9', .35, 3, 6], ['dinar', .25, 2000, 6000], ['cig', .12], ['vest', .035], ['helmet', .03], ['pistol', .04]],
+  gen: [['parts', .42], ['fuel', .14], ['dinar', .32, 5000, 20000], ['scrap', .2, 1, 2], ['invoice', .03]],
+  fat: [['can', .25], ['samoon', .2, 1, 2], ['dinar', .2, 1000, 4000], ['shirt', .08], ['knife', .04]],
+  soldier: [['ammo7', .32, 6, 12], ['helmet', .07], ['vest', .05], ['medkit', .08], ['dinar', .15, 2000, 5000], ['rifle', .015]],
+  doctor: [['bandage', .35], ['medkit', .12], ['dinar', .2, 3000, 8000], ['watch', .06]],
+  giant: [['dinar', 1, 15000, 40000], ['gold', .5], ['parts', 1, 2, 2], ['scrap', 1, 4, 4]]
+};
+function dropLoot(z) {
+  const T = ZDROP[z.type]; if (!T) return; const got = [];
+  for (const [id, p, a, b] of T) { if (Math.random() >= p) continue;
+    if (id === 'pistol' || id === 'rifle') { if (G.weps[id] != null) continue; G.weps[id] = 1; got.push((id === 'pistol' ? '🔫 ' : '🔫 ') + L(WEAPONS[id].n) + tr(' (لكيته بحزامه!)', ' (found on his belt!)')); continue; }
+    let n = a ? Math.round(rand(a, b || a)) : 1; if (id === 'dinar') n = Math.round(n / 250) * 250; add(id, n); got.push((ICON[id] || '') + ' ' + L(ITEMS[id].n) + (n > 1 ? ' ×' + n.toLocaleString('en') : '')); }
+  if (got.length) toast(tr('لكيت عليه: ', 'Found on him: ') + got.join(tr('، ', ', ')), 2800);
+}
+function wearGear(id) { G.gear = G.gear || {}; if (G.gear[id]) return toast(tr('لابسها من قبل.', 'Already wearing it.')); take(id); G.gear[id] = 1; sfx('fix'); toast(id === 'helmet' ? tr('لبست الخوذة. راسي صار أغلى من قبل.', 'Helmet on. My head is worth more now.') : tr('لبست السترة الواقية. أحس روحي جندي.. بلا راتب.', 'Body armor on. I feel like a soldier... without the salary.')); }
+const gearCut = () => { const g = G.gear || {}; return (g.helmet ? .2 : 0) + (g.vest ? .3 : 0); };
+const HAJI_BUY = [[{ dinar: 1500 }, 'samoon', 2], [{ dinar: 2000 }, 'water', 2], [{ dinar: 6000 }, 'parts', 1], [{ dinar: 9000 }, 'fuel', 1], [{ dinar: 8000 }, 'ammo9', 8], [{ dinar: 15000 }, 'ammo7', 12], [{ dinar: 14000 }, 'medkit', 1], [{ dinar: 25000 }, 'vest', 1], [{ dinar: 12000 }, 'helmet', 1]];
+const HAJI_SELL = [[{ phone: 1 }, 'dinar', 5000], [{ watch: 1 }, 'dinar', 8000], [{ cig: 1 }, 'dinar', 3000], [{ gold: 1 }, 'dinar', 30000], [{ shirt: 1 }, 'dinar', 2000], [{ invoice: 1 }, 'dinar', 250]];
+
 Object.assign(JOBS, JOBX);
 View3D.init($('#gl')); resize(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); renderMenu(); requestAnimationFrame(loop);
 setTimeout(() => checkUpdate(false), 1500);
 window.__izFast = () => setInterval(() => { try { update(1 / 60); } catch (e) { console.error(e); } }, 16);
-window.__iz = { lifeTick, lifeDay, spawnGiant, fortify, rebuildWorld, newMission, jobOfL, autoAssign, op, startRaid, update, updComps, findNear, hud, LOOK, zlook, syncNpcs, updWorkers, jobOf, findPath, startRaid, endRaid, convert, hospMenu, strandDay, stairsMenu, stashPanel, applyFloor, colCap, baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
+window.__iz = { dropLoot, invPanel, lifeTick, lifeDay, spawnGiant, fortify, rebuildWorld, newMission, jobOfL, autoAssign, op, startRaid, update, updComps, findNear, hud, LOOK, zlook, syncNpcs, updWorkers, jobOf, findPath, startRaid, endRaid, convert, hospMenu, strandDay, stairsMenu, stashPanel, applyFloor, colCap, baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
 })();

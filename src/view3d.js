@@ -207,7 +207,7 @@ const View3D = (() => {
     if (o.beard) box(.16, .09, .06, hm, 0, .92, .1, body, true); if (o.stache) box(.12, .03, .04, hm, 0, .96, .125, body, true);
     if (o.bag) box(.16, .22, .1, M('#f1f1f1'), .3 * s, .45, .25, body);
     const wep = new THREE.Group(); wep.position.set(.26, .62, .12); body.add(wep);
-    if (o.z) { for (const a of arms) a.rotation.x = -1.35; g.scale.set(o.fat ? .8 : .86, .86, o.fat ? .8 : .86); }
+    if (o.z) { for (const a of arms) a.rotation.x = -1.35; g.scale.set(o.fat ? .82 : .95, .97, o.fat ? .82 : .95); }
     return { g, body, legs, arms, wep, ph: rnd() * 6, ang: 0, lx: null, lz: null, o };
   }
   function mkCat() { const g = new THREE.Group(), body = new THREE.Group(); g.add(body); const m = M('#e39a3b'); box(.14, .13, .34, m, 0, .17, 0, body); box(.13, .12, .12, m, 0, .27, .2, body); box(.03, .05, .03, m, -.04, .35, .2, body); box(.03, .05, .03, m, .04, .35, .2, body); const tl = box(.03, .22, .03, m, 0, .3, -.2, body); const legs = []; for (const [x, z] of [[-.05, .12], [.05, .12], [-.05, -.12], [.05, -.12]]) { const p = new THREE.Group(); p.position.set(x, .12, z); box(.04, .12, .04, m, 0, -.06, 0, p); body.add(p); legs.push(p); } return { g, body, legs, arms: [], wep: new THREE.Group(), ph: 0, ang: 0, lx: null, lz: null, o: {}, tail: tl }; }
@@ -275,7 +275,7 @@ const View3D = (() => {
     bridgeG.visible = play && !!G.links.mp; for (const p of pads) p.g.visible = play && !!G.links[p.k] && fl === 0 && (p.b === 0 || p.b === pb);
     for (const k in gates) gates[k].visible = !World.gates[k].open;
     for (const f of figs.values()) f.used = false;
-    for (const z of R.act) upd(z, () => mkFig(z.look), z.x, z.y, dt, { z: 1, fall: z.fall > 0, hide: !see(z), scale: z.type === 'boss' ? 2 : z.type === 'giant' ? 2.3 : z.type === 'ali' ? 1 : 0 });
+    for (const z of R.act) upd(z, () => mkFig(z.look), z.x, z.y, dt, { z: 1, fall: z.fall > 0, hide: !see(z), scale: z.type === 'boss' ? 2 : z.type === 'giant' ? 1.6 : z.type === 'ali' ? 1 : 0 });
     if (play) {
       for (const b of (R.bodies || [])) upd(b, () => mkFig(b.look), b.x, b.y, dt, { z: 1, fall: true, hide: !see(b) || fl > 0 });
       for (const d of (R.defs || [])) { const f = upd(d, () => mkFig(d.look), d.x, d.y, dt, { hide: !see(d) || fl > 0, face: d.face }); setWep(f, d.kind === 'soldier' ? 'rifle' : 'pipe'); }

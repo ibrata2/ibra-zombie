@@ -52,7 +52,7 @@ const NPC = {
 const COMPS = ['aj', 'noor', 'mur', 'cat', 'saif', 'sol'];
 for (let i = 0; i < 16; i++) NPC['sv' + i] = { n: ['ناجي', 'Survivor'] };
 for (let i = 0; i < 4; i++) NPC['st' + i] = { n: ['ناجي محاصر', 'Trapped survivor'] };
-const idleN = () => G.col.pop - Object.values(G.col.jobs).reduce((a, b) => a + (b || 0), 0);
+const idleN = () => G.col.pop - (G.col.trainee || 0) - Object.values(G.col.jobs).reduce((a, b) => a + (b || 0), 0);
 const JOBS = { soldier: ['جنود', 'Soldiers', 'يدافعون بالليل بالسلاح (يحتاج معسكر)', 'Defend at night with guns (needs a camp)'], medic: ['مسعفين', 'Medics', 'يعالجون الجرحى ويرجّعون الزومبي لوعيهم (يحتاج مستشفى)', 'Treat the wounded, revive zombies (needs hospital)'], guard: ['حرّاس', 'Guards', 'يقللون هجمات الزومبي عالمقر', 'Thin out the hordes at the base'], farm: ['مزارعين', 'Farmers', 'كل مزارع يأكّل نفرين', 'Each farmer feeds two people'], scav: ['جمّاعين', 'Scavengers', 'يجيبون أغراض كل يوم', 'Bring back supplies every day'], doc: ['باحثين', 'Researchers', 'يشتغلون على اللقاح', 'Work on the vaccine'] };
 const CLV = [[0, ['ملجأ', 'Shelter'], -1], [4, ['نقطة ناجين', 'Survivor outpost'], 2], [8, ['حيّ محرَّر', 'Liberated district'], 1], [12, ['مستعمرة', 'Colony'], 0], [16, ['مدينة ناجين', 'Survivor city'], 3]];
 const colLevel = () => { let l = 0; for (let i = 0; i < CLV.length; i++) if (G.col.pop >= CLV[i][0]) l = i; return l; };
@@ -63,7 +63,7 @@ const LOOK = {
   noor: { id: 'no', model: 'C03', shirt: '#f4f4f4', pants: '#3a5a8a', hat: 'hijab', hatc: '#8e3b5e' },
   mur: { id: 'mu', model: 'C04', shirt: '#3d5a80', pants: '#333', hair: '#111', stache: 1, hat: 'cap', hatc: '#c33' },
   saif: { id: 'sa', model: 'C05', shirt: '#e2334a', pants: '#1a1a1a', hair: '#2b1b10', phone: 1 },
-  sol: { id: 'so', shirt: '#5a6b3a', pants: '#4a5a30', hat: 'helmet', hatc: '#4a5a30' },
+  sol: { id: 'so', model: 'C06', shirt: '#5a6b3a', pants: '#4a5a30', hat: 'helmet', hatc: '#4a5a30' },
   haji: { id: 'hj', robe: '#8a7a5a', shirt: '#8a7a5a', beard: 1, hair: '#ddd', hat: 'shemagh', hatc: '#c33' },
   umali: { id: 'um', robe: '#16161a', shirt: '#16161a', hat: 'hijab', hatc: '#16161a' },
   book: { id: 'bk', shirt: '#6b4f2a', pants: '#444', hair: '#ccc', beard: 1 }
@@ -233,10 +233,10 @@ function save(auto) {
 function blank(name) {
   const comps = {}; for (const id of COMPS) comps[id] = { st: 'none', trust: 50, joinDay: 0, asked: 0 };
   const veh = [['bike', 'bike', 0], ['stuta', 'stuta', 0], ['kia', 'kia', 0], ['saipa', 'saipa', 0], ['truck', 'truck', 70]].map(([t, s, f]) => ({ t, x: S[s].x, y: S[s].y, a: 0, sp: 0, fuel: f, hp: VEH[t].hp, up: { armor: 0, tank: 0, horn: 0, seats: 0 } }));
-  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, floor: 0, flr: 1, stash: {}, dis: {}, fac: { fuel: 0, food: 0, water: 0, med: 0, arms: 0 }, links: {}, conv: {}, strand: [], col: { pop: 0, bodies: 0, hurt: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0, soldier: 0, medic: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
+  return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, floor: 0, flr: 1, stash: {}, dis: {}, fac: { fuel: 0, food: 0, water: 0, med: 0, arms: 0 }, links: {}, conv: {}, fort: {}, prod: {}, mis: null, crops: 0, strand: [], col: { pop: 0, bodies: 0, hurt: 0, trainee: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0, soldier: 0, medic: 0, cook: 0, water: 0, fuel: 0, pharm: 0, smith: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
 }
 function enterWorld() {
-  World.gen(); applyConv(); View3D.build(); R.bodies = []; R.raid = null; R.defs = [];
+  World.gen(); setupLife(); applyConv(); View3D.build(); R.bodies = []; R.raid = null; R.defs = [];
   for (const k in World.gates) if (G.flags[k]) World.setGate(k, true);
   for (const k in World.locks) if (G.flags['lk_' + k]) World.setLock(k, true);
   applyFloor(); buildObjs(); syncNpcs(); spawnAll();
@@ -256,7 +256,7 @@ async function startNew(name, skipIntro) {
   save(true);
 }
 function loadGame(name) {
-  try { const g = JSON.parse(localStorage.getItem('ibz_save_' + name)); if (!g) return false; const b = blank(name); G = Object.assign(b, g); for (const id of COMPS) if (!G.comps[id]) G.comps[id] = b.comps[id]; G.col.jobs = Object.assign({ soldier: 0, medic: 0 }, G.col.jobs); G.conv = G.conv || {}; G.strand = G.strand || []; enterWorld(); toast(tr('هلا بيك من جديد، ', 'Welcome back, ') + name); return true; } catch (e) { return false; }
+  try { const g = JSON.parse(localStorage.getItem('ibz_save_' + name)); if (!g) return false; const b = blank(name); G = Object.assign(b, g); for (const id of COMPS) if (!G.comps[id]) G.comps[id] = b.comps[id]; G.col.jobs = Object.assign({ soldier: 0, medic: 0, cook: 0, water: 0, fuel: 0, pharm: 0, smith: 0 }, G.col.jobs); G.col.trainee = G.col.trainee || 0; G.conv = G.conv || {}; if (!g.fort) { G.fort = {}; if (G.conv.hosp != null) G.fort.hosp = 1; if (G.conv.camp != null) G.fort.camp = 1; } G.prod = G.prod || {}; G.strand = G.strand || []; enterWorld(); toast(tr('هلا بيك من جديد، ', 'Welcome back, ') + name); return true; } catch (e) { return false; }
 }
 
 // ---------------------------------------------------------------- npcs & objects
@@ -268,19 +268,22 @@ function syncNpcs() {
     const c = comp(id);
     if (c.st === 'with') put(id, c.x != null ? c : World.freeNear(G.x, G.y), 1);
     else if (c.st === 'home') put(id, homeSpot(id));
+    else if (c.st === 'post') { const o = old.find(n => n.id === id && n.poster === c.post); put(id, o || postSpot(c.post)); const e = R.npcs[R.npcs.length - 1]; e.poster = c.post; if (o) Object.assign(e, { job: o.job, path: o.path, pi: o.pi, wt: o.wt, st: o.st, carry: o.carry, ws: o.ws, cyc: o.cyc, hop: o.hop, tgt: o.tgt }); }
     else if (c.st === 'none' && (id !== 'saif' || (G.day >= 3 && !G.flags.saifNo))) put(id, S[id]);
   }
   if (G.day >= 2) put('haji', S.haji);
-  if (G.flags.umali) put('umali', { x: S.home.x + 28, y: S.home.y - 10 }); else if (G.day >= 4) put('umali', S.umali);
+  if (G.flags.umali && G.flags.umaliMoved) { const o = old.find(n => n.id === 'umali'); put('umali', o || postSpot('kitchen')); const e = R.npcs[R.npcs.length - 1]; e.poster = 'kitchen'; if (o) Object.assign(e, { job: o.job, path: o.path, pi: o.pi, wt: o.wt, st: o.st, carry: o.carry, ws: o.ws, cyc: o.cyc }); }
+  else if (G.flags.umali) put('umali', { x: S.home.x + 28, y: S.home.y - 10 }); else if (G.day >= 4) put('umali', S.umali);
   put('book', S.book);
   for (const st of G.strand) put('st' + st.k, st);
-  for (let i = 0; i < Math.min(16, G.col.pop); i++) { const id = 'sv' + i, o = old.find(n => n.id === id); put(id, o || mallSpot()); const e = R.npcs[R.npcs.length - 1]; e.worker = 1; e.idx = i; if (o) { e.job = o.job; e.path = o.path; e.pi = o.pi; e.wt = o.wt; e.st = o.st; e.tgt = o.tgt; } }
+  for (let i = 0; i < Math.min(16, G.col.pop); i++) { const id = 'sv' + i, o = old.find(n => n.id === id); put(id, o || mallSpot()); const e = R.npcs[R.npcs.length - 1]; e.worker = 1; e.idx = i; if (o) { e.job = o.job; e.path = o.path; e.pi = o.pi; e.wt = o.wt; e.st = o.st; e.tgt = o.tgt; e.carry = o.carry; e.ws = o.ws; e.cyc = o.cyc; e.hop = o.hop; } }
 }
 function buildObjs() {
   const o = R.objs; o.length = 0;
   R.fuelC = World.containers.find(c => c.fixed === 'fuel');
-  const LB = { home: [['بيتك', 'Your home'], '#7fc24b'], mall: [['مول الكرادة — مكان آمن', 'Karrada Mall — safe place'], '#c9a84c'], booth: [['كابينة السيطرة', 'Checkpoint booth'], '#e8cf7a'], pharmacy: [['صيدلية', 'Pharmacy'], '#7fe0a0'], police: [['مركز الشرطة', 'Police station'], '#8fb0e8'], butcher: [['قصّاب', 'Butcher'], '#e08a7a'], bookshop: [['مكتبة المتنبي', 'Mutanabbi bookshop'], '#d8b98a'], armory: [['المشجب', 'Armory'], '#a8c070'], hospital: [['المستشفى', 'Hospital'], '#ff7b7b'], camp: [['المعسكر', 'Camp'], '#b8d080'], warehouse: [['مخزن المشروبات', 'Drinks warehouse'], '#e06a5a'] };
-  R.labels = World.buildings.filter(b => LB[b.type]).map(b => ({ b: b.i + 1, x: (b.x + b.w / 2) * 16, y: (b.y + b.h / 2) * 16, h: b.type === 'mall' ? 6.6 : b.type === 'warehouse' ? 5 : 3.4, t: LB[b.type][0], c: LB[b.type][1] }));
+  const LB = { home: [['بيتك', 'Your home'], '#7fc24b'], mall: [['مول الكرادة — مكان آمن', 'Karrada Mall — safe place'], '#c9a84c'], booth: [['كابينة السيطرة', 'Checkpoint booth'], '#e8cf7a'], pharmacy: [['صيدلية', 'Pharmacy'], '#7fe0a0'], police: [['مركز الشرطة', 'Police station'], '#8fb0e8'], butcher: [['قصّاب', 'Butcher'], '#e08a7a'], bookshop: [['مكتبة المتنبي', 'Mutanabbi bookshop'], '#d8b98a'], armory: [['المشجب', 'Armory'], '#a8c070'], hospital: [['المستشفى', 'Hospital'], '#ff7b7b'], camp: [['المعسكر', 'Camp'], '#b8d080'], waterplant: [['محطة الماي', 'Water plant'], '#3d8fd6'], refinery: [['المصفى', 'Refinery'], '#e08a3a'], warehouse: [['مخزن المشروبات', 'Drinks warehouse'], '#e06a5a'] };
+  const LBX = { hospital: () => op('hosp') ? null : ['مستشفى مهجور — يحتاج تحصين', 'Abandoned hospital — needs fortifying'], camp: () => op('camp') ? null : ['ساحة معسكر مهجورة — تحتاج تحصين', 'Abandoned camp yard — needs fortifying'], waterplant: () => G.fac.water ? null : ['محطة ماي عاطلة', 'Broken water plant'], refinery: () => G.fac.fuel ? null : ['مصفى عاطل', 'Broken refinery'] };
+  R.labels = World.buildings.filter(b => LB[b.type]).map(b => ({ b: b.i + 1, x: (b.x + b.w / 2) * 16, y: (b.y + b.h / 2) * 16, h: b.type === 'mall' ? 6.6 : b.type === 'warehouse' ? 5 : 3.4, t: (LBX[b.type] && LBX[b.type]()) || LB[b.type][0], c: LB[b.type][1] }));
   const mb = R.mini = Art.mk(World.W, World.H), mg = mb.getContext('2d'), MC = { 0: '#8f7f5c', 8: '#6f7a4c', 1: '#33343a', 2: '#77736a', 5: '#2f6068', 6: '#55565c', 7: '#1a1a1e', 10: '#555', 11: '#e3b62f' };
   for (let y = 0; y < World.H; y++) for (let x = 0; x < World.W; x++) { mg.fillStyle = MC[World.tiles[World.I(x, y)]] || '#8f7f5c'; mg.fillRect(x, y, 1, 1); }
   for (const b of World.buildings) { mg.fillStyle = LB[b.type] ? LB[b.type][1] : '#b3a88e'; mg.fillRect(b.x, b.y, b.w, b.h); }
@@ -292,7 +295,7 @@ function buildObjs() {
   o.push({ x: S.mallBench.x, y: S.mallBench.y, label: ['الورشة', 'Workshop'], act: () => { if (!G.flags.gen) toast(tr('الورشة بلا كهرباء. المولدة عطلانة.', 'The workshop has no power. The generator is dead.')); else if (comp('mur').st === 'left') toast(tr('مرتضى راح.. ومحد يعرف يشتغل عليها.', 'Murtadha is gone... nobody else knows how to use it.')); else workshop(); } });
   o.push({ x: S.mallGen.x, y: S.mallGen.y, label: ['المولدة', 'Generator'], act: () => toast(G.flags.gen ? tr('المولدة تشتغل. صوتها أحلى من الموسيقى.', 'The generator is running. Sweeter than music.') : tr('مولدة المول عطلانة. يرادلها مرتضى و٣ قطع غيار.', 'The mall generator is dead. It needs Murtadha and 3 spare parts.')) });
   o.push({ x: S.board.x, y: S.board.y, label: ['تطوير المقر', 'Develop the base'], act: baseMenu });
-  for (const k in G.conv) { const b = World.buildings[G.conv[k]], dy = b.door === 'S' ? b.dy - 1 : b.dy + 1; o.push({ x: b.dx * 16 + 8, y: dy * 16 + 8, r: 30, label: k === 'hosp' ? ['المستشفى', 'Hospital'] : ['المعسكر', 'Camp'], act: k === 'hosp' ? hospMenu : colonyPanel }); }
+  for (const k of ['hosp', 'camp']) { const b = bOfK(k); if (!b) continue; const dy = b.door === 'S' ? b.dy - 1 : b.dy + 1, dy2 = b.door === 'S' ? b.dy + 1 : b.dy - 1; if (op(k)) o.push({ x: b.dx * 16 + 8, y: dy * 16 + 8, r: 30, label: k === 'hosp' ? ['المستشفى', 'Hospital'] : ['المعسكر', 'Camp'], act: () => { if (!supplyAct(k)) (k === 'hosp' ? hospMenu : colonyPanel)(); } }); else o.push({ x: b.dx * 16 + 8, y: dy2 * 16 + 8, r: 34, label: k === 'hosp' ? ['حصّن المستشفى', 'Fortify the hospital'] : ['حصّن المعسكر', 'Fortify the camp'], act: () => fortify(k) }); }
   o.push({ x: S.stairs.x, y: S.stairs.y, r: 26, fl: 'all', label: ['الدرج', 'Stairs'], act: stairsMenu });
   for (const f of S._mall.floors[0]) if (f.k === 'bed') o.push({ x: f.tx * 16 + 8, y: f.ty * 16 + 8, fl: 1, label: ['نام', 'Sleep'], act: () => sleepAct({ x: S.mallBed.x, y: S.mallBed.y + 26 }) });
   for (const f of S._mall.floors[1]) { if (f.stash) o.push({ x: f.tx * 16 + 8, y: f.ty * 16 + 8, fl: 2, label: ['المخزن', 'Storage'], act: stashPanel }); if (f.clinic) o.push({ x: f.tx * 16 + 8, y: f.ty * 16 + 8, fl: 2, r: 28, label: ['سرير العيادة', 'Clinic bed'], act: clinic }); }
@@ -315,11 +318,12 @@ function lockAct(k, key) {
 }
 
 // ---------------------------------------------------------------- zombies
-const ZL = {};
+const ZL = {}, ZMODEL = { normal: 'Z01', vendor: 'Z02' };
 function zlook(type, v) {
   const k = type + v; if (ZL[k]) return ZL[k];
   const o = { id: 'z' + k, z: 1, skin: ['#8fae7a', '#7fa08a', '#9ab07a'][v % 3], shirt: ['#7a4a4a', '#4a5d7a', '#6a6a55', '#5a4a6a', '#8a7a4a', '#3f5f4f'][v % 6], pants: ['#33373f', '#4a4033', '#2f3a33'][v % 3], hair: '#22201a' };
   const rb = ['#b9b4a0', '#8a8f96', '#a39070'][v % 3];
+  if (ZMODEL[type]) o.model = ZMODEL[type];
   if (type === 'cop') Object.assign(o, { shirt: '#dfe6ee', pants: '#1c2f55', hat: 'cap', hatc: '#f4f4f4', vest: '#b8e04a' });
   if (type === 'vendor') Object.assign(o, { robe: rb, shirt: rb, stache: 1 });
   if (type === 'fat') o.fat = 1;
@@ -328,6 +332,9 @@ function zlook(type, v) {
   if (type === 'hassan') Object.assign(o, { robe: '#e9e4d6', shirt: '#e9e4d6', bald: 1, stache: 1, bag: 1, fat: 1 });
   if (type === 'colonel') Object.assign(o, { shirt: '#1c2f55', pants: '#1c2f55', hat: 'cap', hatc: '#1c2f55', fat: 1, stache: 1 });
   if (type === 'boss') Object.assign(o, { shirt: '#1b4fa3', pants: '#222', fat: 1, bald: 1 });
+  if (type === 'doctor') Object.assign(o, { shirt: '#eef0f0', pants: '#5a7a9a' });
+  if (type === 'giant') Object.assign(o, { fat: 1, shirt: '#5a3a2a', bald: 1 });
+  if (type === 'ali') Object.assign(o, { shirt: '#1f7a3a', pants: '#2c2f36', skin: '#a9b88a' });
   return ZL[k] = o;
 }
 function mkZ(type, x, y) { const s = ZT[type]; return { type, s, x, y, hp: s.hp, look: zlook(type, (Math.random() * 6) | 0), dir: (Math.random() * 4) | 0, wob: rand(0, 6), kx: 0, ky: 0, fall: 0, scare: 0, alert: 0, at: .5, wt: rand(0, 3), wa: null, say: rand(3, 12), flash: 0, guard: 0 }; }
@@ -335,7 +342,10 @@ function ztype(zn) { const r = Math.random(); if (zn === 0) return r < .1 ? 'ven
 const ZCOUNT = [22, 32, 34, 26, 36];
 function spawnAll() {
   R.zombies.length = 0; const f = G.flags;
-  if (f.ended === 'good') return;
+  { const H = bOfK('hosp'), C = bOfK('camp'); if (H && !op('hosp')) for (let i = 0; i < 5; i++) { const p = bldSpot(H), z = mkZ('doctor', p.x, p.y); z.look = zlook('doctor', i); R.zombies.push(z); } if (C && !op('camp')) for (let i = 0; i < 4; i++) { const p = doorOut(C, 6); R.zombies.push(mkZ('soldier', p.x, p.y)); } }
+  if (f.ch2 && !f.bigBoss) spawnGiant(S.g4.x - 60, S.g4.y + 10, { big: 1 });
+  if (f.aliQ === 1 && f.g3) spawnAli();
+  misSpawn();
   for (const st of G.strand) for (let i = 0; i < 3; i++) { const a = rand(0, 6.28), z = mkZ(ztype(World.zoneOf(st.x >> 4)), st.x + Math.cos(a) * 60, st.y + Math.sin(a) * 60); if (!solidAt(z.x, z.y, 1)) R.zombies.push(z); }
   if (G.col.horde) { const n = Math.max(4, 12 + G.col.pop + (G.col.raid || 0) - G.col.jobs.guard * 3); G.col.raid = 0; for (let i = 0; i < n; i++) { const a = rand(0, 6.28), z = mkZ(ztype(2), S.mallDoor.x + Math.cos(a) * rand(120, 240), S.mallDoor.y + 60 + Math.abs(Math.sin(a)) * rand(40, 160)); z.alert = 20; if (!solidAt(z.x, z.y, 1)) R.zombies.push(z); } G.col.horde = 0; }
   for (let zn = 0; zn < 5; zn++) { const n = Math.round(ZCOUNT[zn] * (1 + Math.min(G.day, 12) * .035 + G.col.pop * .04) * (secured(zn) ? .3 : 1)); for (let i = 0; i < n; i++) { const p = World.randOutdoor(zn); if (!p || hyp(p.x - G.x, p.y - G.y) < 170) continue; if (zn === 0 && !f.hassan && hyp(p.x - S.home.x, p.y - S.home.y) < 260) continue; R.zombies.push(mkZ(ztype(zn), p.x, p.y)); } }
@@ -368,8 +378,8 @@ function updZombies(dt, title) {
     if (!hidden && (d < sight || z.alert > 0)) {
       if (d < sight) z.alert = Math.max(z.alert, 3);
       stepZ(z, Math.atan2(dy, dx) + Math.sin(z.wob * .5) * .4, z.s.sp * (night ? 1.15 : 1), dt);
-      if (Math.random() < dt * .04 && z.type !== 'boss') { z.fall = 1.3; bubble(z, pick(L(OUCH)), 1.2); }
-      if (d < (z.type === 'boss' ? 20 : 12)) { z.at -= dt; if (z.at <= 0) { z.at = 1.1; zAttack(z); } }
+      if (Math.random() < dt * .04 && z.type !== 'boss' && z.type !== 'giant') { z.fall = 1.3; bubble(z, pick(L(OUCH)), 1.2); }
+      if (d < (z.type === 'boss' ? 20 : z.type === 'giant' ? 24 : 12)) { z.at -= dt; if (z.at <= 0) { z.at = 1.1; zAttack(z); } }
     } else { z.wt -= dt; if (z.wt <= 0) { z.wt = rand(2, 6); z.wa = Math.random() < .3 ? null : rand(0, 6.28); } if (z.wa != null) stepZ(z, z.wa, z.s.sp * .5, dt); }
     z.say -= dt; if (z.say <= 0 && d < 170) { z.say = rand(6, 15); bubble(z, pick(L(ZLINES[z.type] || ZLINES.normal))); }
   }
@@ -377,10 +387,11 @@ function updZombies(dt, title) {
 }
 function zAttack(z) {
   if (G.inVeh >= 0) { const v = G.veh[G.inVeh]; v.hp -= z.s.dmg * .4 * (1 - v.up.armor * .3); sfx('hit'); return; }
-  if (R.inv > 0) return; G.hp -= z.s.dmg; R.inv = .5; R.shake = .25; sfx('hurt'); $('#hurt').style.opacity = 1; setTimeout(() => $('#hurt').style.opacity = 0, 160);
+  if (R.inv > 0) return; G.hp -= z.s.dmg; R.inv = .5; R.shake = z.type === 'giant' ? .7 : .25; sfx('hurt'); $('#hurt').style.opacity = 1; setTimeout(() => $('#hurt').style.opacity = 0, 160);
   if (G.hp <= 0) die();
 }
 function hitZ(z, dmg, a, kb) {
+  if (z.type === 'giant') kb *= .12;
   z.hp -= dmg; z.kx = Math.cos(a) * kb; z.ky = Math.sin(a) * kb; z.flash = .12; z.alert = 6; z.guard = 0; sfx('hit');
   R.fx.push({ k: 'puff', x: z.x, y: z.y - 9, t: .25, c: '#7a1a1a' }); if (z.hp <= 0) killZ(z);
 }
@@ -388,7 +399,9 @@ function killZ(z) {
   const i = R.zombies.indexOf(z); if (i >= 0) R.zombies.splice(i, 1);
   for (let j = 0; j < 6; j++) R.fx.push({ k: 'puff', x: z.x + rand(-5, 5), y: z.y - rand(2, 14), t: rand(.25, .6), c: j % 2 ? '#5d7a3a' : '#7a1a1a' });
   if (R.raid && z.raid) R.raid.killed++;
-  if (G.conv.hosp && !z.guard && !['boss', 'colonel', 'hassan'].includes(z.type) && R.bodies.length < 30) R.bodies.push({ x: z.x, y: z.y, look: z.look, t: 150 });
+  if (z.type === 'ali') { add('alibody'); G.flags.aliQ = 2; toast(tr('علي وكع! هذا هو.. فانيلة المنتخب والنظارات. شلته على كتفي. وصّله لنور بالمستشفى.', 'Ali is down! That is him... green jersey and glasses. On my shoulder now. Take him to Noor at the hospital.'), 8000); save(true); return; }
+  if (z.type === 'giant') { R.shake = .8; add('parts', 2); add('scrap', 4); G.flags.giants = (G.flags.giants || 0) + 1; toast(z.big ? tr('«أبو كرش» وكع! الأرض ارتاحت. بغداد كلها سمعت الصوت.', '«Abu Karsh» is down! The ground can rest. All of Baghdad heard it.') : tr('الضخم وكع! (+قطع غيار ×٢ +سكراب ×٤)', 'The giant is down! (+parts ×2 +scrap ×4)'), 6500); if (z.big) { G.flags.bigBoss = 1; save(true); } }
+  if (op('hosp') && !z.guard && !['boss', 'colonel', 'hassan', 'giant'].includes(z.type) && R.bodies.length < 30) R.bodies.push({ x: z.x, y: z.y, look: z.look, t: 150 });
   G.kills++; G.dayKills++; const r = Math.random(), got = (id, n = 1) => { add(id, n); toast('+ ' + L(ITEMS[id].n) + (n > 1 ? ' ×' + n : ''), 2200); };
   if (z.type === 'hassan') { G.flags.hassan = 1; add('samoon', 2); toast(tr('أبو حسن وكع.. وكيس الصمون صار إلك. الله يرحمه، جان يطلبني ألف دينار.', 'Abu Hassan is down... and his bag of bread is yours. Rest in peace — I owed him a thousand dinars.'), 6500); save(true); }
   else if (z.type === 'colonel') { G.flags.colonel = 1; add('key_police'); toast(tr('العقيد وكع. أخذت مفتاح مركز الشرطة من حزامه.', 'The Colonel is down. Took the police station key from his belt.'), 5500); }
@@ -509,7 +522,7 @@ function findPath(fx, fy, tx, ty) {
   if (prev[g] === -2) return null; const path = []; for (let c = g; c !== -1; c = prev[c]) path.push(c); path.reverse();
   const out = []; for (let i = 1; i < path.length; i++) if (i === path.length - 1 || i % 2 === 0) out.push({ x: (path[i] % W) * 16 + 8, y: ((path[i] / W) | 0) * 16 + 8 }); return out;
 }
-function updWorkers(dt) {
+function updWorkersOld(dt) {
   let budget = 2;
   for (const e of R.npcs) {
     if (!e.worker) continue; const job = jobOf(e.idx);
@@ -600,8 +613,11 @@ async function compMenu(id) {
   if (id !== 'cat') o.push(tr('شلون الثقة بيناتنه؟', 'How are we doing?'));
   if (id === 'mur' && G.flags.gen) o.push(tr('افتح الورشة', 'Open the workshop'));
   if (id === 'noor') o.push(tr('عالجيني', 'Patch me up'));
+  const PO = { noor: ['hosp', () => op('hosp'), ['امسكي المستشفى', 'Run the hospital']], sol: ['camp', () => op('camp'), ['استلم المعسكر ودرّب الناس', 'Take the camp and train people']], mur: ['garage', () => G.flags.gen, ['امسك ورشة المول', 'Run the mall workshop']], aj: ['gate', () => G.flags.mall, ['اكعد يم باب المول وسوّي چاي للحرس', 'Sit by the mall door and brew tea for the guards']], saif: ['radio', () => G.flags.radio, ['صير مذيع إذاعة المول', 'Become the mall radio host']] }, po = PO[id];
+  if (po && po[1]() && !(c.st === 'post' && c.post === po[0])) o.push(L(po[2]));
   o.push(tr('ماكو شي', 'Never mind'));
   const i = await say(id, pick(L(GREET[id])), o), ch = o[i];
+  if (po && ch === L(po[2])) { c.st = 'post'; c.post = po[0]; c.x = null; syncNpcs(); sfx('fix'); return toast(tr(L(NPC[id].n) + ' استلم مكانه. تشوفه هناك يشتغل.', L(NPC[id].n) + ' took the post. You will see them working there.'), 5000); }
   if (i === 0) { c.st = c.st === 'with' ? 'home' : 'with'; c.x = null; syncNpcs(); toast(c.st === 'with' ? tr(L(NPC[id].n) + ' يمشي وياك.', L(NPC[id].n) + ' is following you.') : tr(L(NPC[id].n) + ' رجع للملجأ.', L(NPC[id].n) + ' went back to the shelter.')); }
   else if (ch === tr('شلون الثقة بيناتنه؟', 'How are we doing?')) await say(id, trustLine(c.trust) + '  (' + Math.round(c.trust) + '%)');
   else if (ch === tr('افتح الورشة', 'Open the workshop')) await workshop();
@@ -689,7 +705,8 @@ const SC = {
     }
   },
   async umali() {
-    if (G.flags.umali) return say('umali', tr('أكلت؟ وجهك أصفر. اكعد أسويلك شي.', "Have you eaten? You look pale. Sit, I'll make you something."));
+    if (G.flags.umali) return umaliTalk();
+    if (0) return say('umali', tr('أكلت؟ وجهك أصفر. اكعد أسويلك شي.', "Have you eaten? You look pale. Sit, I'll make you something."));
     const i = await say('umali', tr('يمّه إنت ابن الجيران؟ الحمد لله. والله عطشانة من البارحة.. عندك قنينتين ماي؟', "Dear, aren't you the neighbors' boy? Thank God. I've been thirsty since yesterday... do you have two bottles of water?"), [tr('تفضلي خالة (ماي ×٢)', 'Here you go, Auntie (water ×2)'), tr('والله ما عندي', "I'm sorry, I don't")]);
     if (i === 0 && has('water', 2)) { take('water', 2); G.flags.umali = 1; add('dolma', 2); await say('umali', tr('الله يحفظك. هاك دولمة، طابختها قبل ما تصير السالفة.. وبعدها أحسن من أكل المطاعم. واني أسكن ببيتك وأخبزلكم كل يوم.', "God keep you. Here's dolma, cooked before it all happened... still better than restaurant food. I'll stay at your house and bake for you every day.")); syncNpcs(); }
     else { if (i === 0) toast(tr('ما عندك قنينتين ماي!', "You don't have two bottles!")); await say('umali', tr('ميخالف يمّه.. الله كريم.', "It's alright, dear... God is generous.")); }
@@ -715,21 +732,21 @@ async function broadcast() {
 }
 function colonyDay(notes) {
   const c = G.col, j = c.jobs;
-  if (c.incoming) { c.incoming = 0; const n = 1 + ((Math.random() * 3) | 0) + (colLevel() >= 2 ? 1 : 0); c.pop += n; j.scav += n; notes.push(tr('وصلوا ' + n + ' ناجين على صوت الراديو! صرنا ' + c.pop + '.', n + ' survivors followed the radio! We are ' + c.pop + ' now.')); }
+  if (c.incoming) { c.incoming = 0; const n = Math.min(Math.max(0, colCap() - c.pop), 1 + ((Math.random() * 3) | 0) + (colLevel() >= 2 ? 1 : 0)); c.pop += n; c.trainee = (c.trainee || 0) + n; notes.push(tr('وصلوا ' + n + ' ناجين على صوت الراديو! صرنا ' + c.pop + '. اليوم يتدرّبون، وباجر يستلمون شغل.', n + ' survivors followed the radio! We are ' + c.pop + ' now. They train today and start work tomorrow.')); }
   if (!c.pop) return;
-  const lv0 = c.lv || 0; let food = j.farm * 2, got = [];
-  for (let i = 0; i < j.scav; i++) { const r = Math.random(); if (r < .45) food++; else if (r < .65) { add('scrap'); got.push('scrap'); } else if (r < .78) { add('water'); got.push('water'); } else if (r < .86) { add('parts'); got.push('parts'); } else if (r < .92) { add('ammo9', 3); got.push('ammo9'); } else if (r < .95) { add('fuel'); got.push('fuel'); } }
+  const lv0 = c.lv || 0; let food = 0, got = [];
+  for (let i = 0; i < 0; i++) { const r = Math.random(); if (r < .45) food++; else if (r < .65) { add('scrap'); got.push('scrap'); } else if (r < .78) { add('water'); got.push('water'); } else if (r < .86) { add('parts'); got.push('parts'); } else if (r < .92) { add('ammo9', 3); got.push('ammo9'); } else if (r < .95) { add('fuel'); got.push('fuel'); } }
   let lack = c.pop - food; while (lack > 0) { const f = FOODS.find(x => G.stash[x] > 0); if (!f) break; if (--G.stash[f] <= 0) delete G.stash[f]; lack--; }
   while (lack > 0) { const f = FOODS.find(x => has(x)); if (!f) break; take(f); lack--; }
-  if (lack > 0) { const gone = Math.min(c.pop, Math.ceil(lack / 2)); c.pop -= gone; let g = gone; for (const k of ['scav', 'doc', 'guard', 'farm', 'soldier', 'medic']) { const d = Math.min(j[k], g); j[k] -= d; g -= d; } notes.push(tr('الأكل ما كفّى المستعمرة. ' + gone + ' عافونه وراحوا يدورون رزقهم.', 'Not enough food for the colony. ' + gone + ' left to fend for themselves.')); }
+  if (lack > 0) { const gone = Math.min(c.pop, Math.ceil(lack / (umaliMall() ? 4 : 2))); if (umaliMall()) notes.push(tr('أم علي قسّمت الأكل بالعدل.. بس ما كفّى.', 'Um Ali shared the food fairly... it still was not enough.')); c.pop -= gone; let g = gone; for (const k of ['scav', 'doc', 'guard', 'farm', 'soldier', 'medic', 'cook', 'water', 'fuel', 'pharm', 'smith']) { const d = Math.min(j[k], g); j[k] -= d; g -= d; } notes.push(tr('الأكل ما كفّى المستعمرة. ' + gone + ' عافونه وراحوا يدورون رزقهم.', 'Not enough food for the colony. ' + gone + ' left to fend for themselves.')); }
   else if (food > c.pop) { const ex = Math.min(3, food - c.pop); add('samoon', ex); notes.push(tr('المزارعين طلّعوا أكل زايد: صمون ×' + ex + '.', 'The farmers had a surplus: bread ×' + ex + '.')); }
   if (got.length) notes.push(tr('الجمّاعين رجعوا بـ ' + got.length + ' غرض.', 'The scavengers came back with ' + got.length + ' items.'));
-  if (c.hurt) { if (G.conv.hosp) { notes.push(tr('المستشفى عالج ' + c.hurt + ' جريح من هجمة الليل.', 'The hospital treated ' + c.hurt + ' wounded from the night raid.')); c.hurt = 0; } else { const d = Math.ceil(c.hurt / 2); c.pop = Math.max(0, c.pop - d); fixJobs(); notes.push(tr('بلا مستشفى.. ' + d + ' من الجرحى ما صمدوا.', 'Without a hospital... ' + d + ' of the wounded did not make it.')); c.hurt = 0; } }
-  if (c.bodies && G.conv.hosp) { const ch = Math.min(.75, .12 + c.research * .01 + j.medic * .08 + (here('noor') ? .1 : 0)); let ok = 0; for (let i = 0; i < c.bodies; i++) if (Math.random() < ch) ok++; ok = Math.min(ok, Math.max(0, colCap() - c.pop)); const bad = c.bodies - ok; c.bodies = 0; c.pop += ok;
+  if (c.hurt) { if (op('hosp')) { notes.push(tr(c.hurt + ' جرحى بأسرّة المستشفى.. المسعفين يعالجوهم واحد واحد.', c.hurt + ' wounded in the hospital beds... the medics treat them one by one.')); } else { const d = Math.ceil(c.hurt / 2); c.pop = Math.max(0, c.pop - d); fixJobs(); notes.push(tr('بلا مستشفى.. ' + d + ' من الجرحى ما صمدوا.', 'Without a hospital... ' + d + ' of the wounded did not make it.')); c.hurt = 0; } }
+  if (c.bodies && op('hosp')) { const ch = Math.min(.8, .12 + c.research * .01 + j.medic * .08 + (atPost('noor', 'hosp') ? .18 : here('noor') ? .1 : 0)); let ok = 0; for (let i = 0; i < c.bodies; i++) if (Math.random() < ch) ok++; ok = Math.min(ok, Math.max(0, colCap() - c.pop)); const bad = c.bodies - ok; c.bodies = 0; c.pop += ok; c.trainee = (c.trainee || 0) + ok;
     if (ok) notes.push(tr('المستشفى رجّع ' + ok + ' زومبي لوعيهم! أول سؤال سألوه: "شكد الساعة؟ عندي دوام."', 'The hospital brought ' + ok + ' zombies back! First question: "What time is it? I have work."')); if (bad) notes.push(tr(bad + ' جثث ما نفع وياهم العلاج. دفنّاهم بكرامة.', bad + ' bodies could not be saved. We buried them with dignity.')); }
-  if (G.conv.hosp && G.col.pop < colCap() && Math.random() < .5 && G.flags.mall) { c.pop++; notes.push(tr('واحد وصل للمول وحده بالليل.. شاف ضوه المستشفى.', 'Someone reached the mall alone last night... they saw the hospital lights.')); }
+  if (op('hosp') && G.col.pop < colCap() && Math.random() < .5 && G.flags.mall) { c.pop++; c.trainee = (c.trainee || 0) + 1; notes.push(tr('واحد وصل للمول وحده بالليل.. شاف ضوه المستشفى.', 'Someone reached the mall alone last night... they saw the hospital lights.')); }
   if (j.soldier) { let a = j.soldier; while (a > 0 && (G.stash.ammo9 > 0 || has('ammo9'))) { if (G.stash.ammo9 > 0) { if (--G.stash.ammo9 <= 0) delete G.stash.ammo9; } else take('ammo9'); a--; } c.noAmmo = a > 0; if (a > 0) notes.push(tr('الجنود ما عدهم رصاص كافي.. يقاتلون بالعصي.', "The soldiers are short on ammo... they're fighting with sticks.")); }
-  if (j.doc) { const b = c.research; c.research += j.doc + (here('noor') ? 1 : 0); for (const [th, a, e] of [[8, 'الباحثين: "عرفنا شي.. الزومبي يهدأ من يشمّ چاي".', 'Researchers: "We learned something... zombies calm down at the smell of tea."'], [20, 'الباحثين جرّبوا لقاح رقم ٧ على زومبي.. كام يرقص. مو هذا المطلوب.', 'The researchers tried vaccine #7 on a zombie... it started dancing. Not the goal.'], [40, 'اللقاح التجريبي اشتغل على واحد! رجع يحچي.. وأول شي سأل عن راتبه.', 'The trial vaccine worked on one! He can talk again... first thing he asked about was his salary.']]) if (b < th && c.research >= th) { notes.push(tr(a, e)); if (th === 40) G.flags.vaccine = 1; } }
+  if (false) { const b = c.research; for (const [th, a, e] of [[8, 'الباحثين: "عرفنا شي.. الزومبي يهدأ من يشمّ چاي".', 'Researchers: "We learned something... zombies calm down at the smell of tea."'], [20, 'الباحثين جرّبوا لقاح رقم ٧ على زومبي.. كام يرقص. مو هذا المطلوب.', 'The researchers tried vaccine #7 on a zombie... it started dancing. Not the goal.'], [40, 'اللقاح التجريبي اشتغل على واحد! رجع يحچي.. وأول شي سأل عن راتبه.', 'The trial vaccine worked on one! He can talk again... first thing he asked about was his salary.']]) if (b < th && c.research >= th) { notes.push(tr(a, e)); if (th === 40) G.flags.vaccine = 1; } }
   c.lv = colLevel(); if (c.lv > lv0) notes.push(tr('المكان كبر! صرنا "' + CLV[c.lv][1][0] + '". ' + L(ZONES[CLV[c.lv][2]]) + ' صارت منطقة مؤمّنة.. بس الزومبيات برّه زادت.', 'We grew! We are now a "' + CLV[c.lv][1][1] + '". ' + L(ZONES[CLV[c.lv][2]]) + ' is secured... but the zombies outside multiplied.'));
 }
 function colonyPanel() {
@@ -737,9 +754,11 @@ function colonyPanel() {
     const draw = () => { while (box.children.length > 1) box.lastChild.remove(); const c = G.col, j = c.jobs, lv = colLevel(), free = idleN(), nx = CLV[lv + 1];
       box.appendChild(el('p', tr('المستوى: ', 'Level: ') + L(CLV[lv][1]) + '   ·   ' + tr('الناجين: ', 'Survivors: ') + c.pop + (nx ? '   ·   ' + tr('التوسعة الجاية عند ', 'Next expansion at ') + nx[0] : '')));
       const sec = [0, 1, 2, 3].filter(secured).map(z => L(ZONES[z])); box.appendChild(el('p', tr('المناطق المؤمّنة: ', 'Secured areas: ') + (sec.length ? sec.join(tr('، ', ', ')) : tr('ولا وحدة بعد', 'none yet'))));
-      box.appendChild(el('p', tr('الأكل اليومي: ينتجون ', 'Daily food: produce ') + (j.farm * 2) + tr(' + الي يلكوه الجمّاعين، ويحتاجون ', ' + scavenged, need ') + c.pop + '   ·   ' + tr('بحث اللقاح: ', 'Vaccine research: ') + Math.min(100, Math.round(c.research / 40 * 100)) + '%'));
+      box.appendChild(el('p', tr('الأكل بالمخزن: ', 'Food in storage: ') + FOODS.reduce((a, k) => a + (G.stash[k] || 0), 0) + tr('، والناس ياكلون كل يوم ', ', people eat per day ') + c.pop + '   ·   ' + tr('بحث اللقاح: ', 'Vaccine research: ') + Math.min(100, Math.round(c.research / 40 * 100)) + '%'));
+      if (c.trainee) box.appendChild(el('p', tr('بالتدريب هسه: ', 'In training now: ') + c.trainee + tr(' — يستلمون شغل باجر الصبح', ' — they start work tomorrow morning')));
+      { const pr = Object.keys(G.prod || {}).filter(k => G.prod[k] > 0); box.appendChild(el('p', tr('إنتاج اليوم لحد هسه: ', 'Produced today so far: ') + (pr.length ? pr.map(k => L(ITEMS[k].n) + ' ×' + G.prod[k]).join(tr('، ', ', ')) : tr('بعد ولا شي', 'nothing yet')))); }
       box.appendChild(el('h3', tr('توزيع الشغل', 'Jobs') + (free ? '  (' + tr('بلا شغل: ', 'idle: ') + free + ')' : '')));
-      for (const k in JOBS) { const row = el('div', null, 'row'), nm = el('span', L(JOBS[k]) + ': ' + j[k] + '  '); nm.appendChild(el('small', tr(JOBS[k][2], JOBS[k][3]))); const bs = el('span'); bs.append(btn('−', () => { if (j[k] > 0) { j[k]--; draw(); } }), ' ', btn('+', () => { if (k === 'soldier' && !G.conv.camp) return toast(tr('ابني معسكر أول من "تطوير المقر".', 'Build a camp first from "Develop the base".')); if (k === 'medic' && !G.conv.hosp) return toast(tr('ابني المستشفى أول من "تطوير المقر".', 'Build the hospital first from "Develop the base".')); if (idleN() > 0) { j[k]++; draw(); } })); row.append(nm, bs); box.appendChild(row); }
+      for (const k in JOBS) { const row = el('div', null, 'row'), nm = el('span', L(JOBS[k]) + ': ' + j[k] + '  '); nm.appendChild(el('small', tr(JOBS[k][2], JOBS[k][3]))); const bs = el('span'); bs.append(btn('−', () => { if (j[k] > 0) { j[k]--; draw(); } }), ' ', btn('+', () => { if (k === 'soldier' && !op('camp')) return toast(tr('حصّن المعسكر أول (روح لباب المعسكر).', 'Fortify the camp first (go to the camp door).')); if ((k === 'medic' || k === 'doc') && !op('hosp')) return toast(tr('حصّن المستشفى أول (روح لباب المستشفى).', 'Fortify the hospital first (go to the hospital door).')); if (WORK[k]) { const lv = G.fac[WORK[k].fac]; if (!lv) return toast(tr('صلّح ' + L(FAC[WORK[k].fac].n) + ' أول من "تطوير المقر".', 'Repair the ' + L(FAC[WORK[k].fac].n) + ' first from "Develop the base".')); if (j[k] >= lv * 2) return toast(tr('المعمل بمستواه هذا يشيل ' + lv * 2 + ' عمال بس. طوّره.', 'At this level the plant holds only ' + lv * 2 + ' workers. Upgrade it.')); } if (idleN() > 0) { j[k]++; draw(); } })); row.append(nm, bs); box.appendChild(row); }
       if (!c.pop) box.appendChild(el('p', tr('ماكو ناجين بعد. بث نداء من الراديو.', 'No survivors yet. Broadcast a call from the radio.'))); };
     draw();
   });
@@ -748,7 +767,7 @@ const FAC = {
   fuel: { n: ['مصفى بانزين صغير', 'Small fuel refinery'], out: ['جليكان بانزين', 'fuel can'], part: 1, need: () => G.flags.gen ? null : tr('يحتاج مولدة المول', 'needs the mall generator') },
   food: { n: ['مطبخ المول', 'Mall kitchen'], out: ['صمون', 'bread'], part: 0, need: () => G.flags.gen ? null : tr('يحتاج مولدة المول', 'needs the mall generator') },
   water: { n: ['فلتر ماي', 'Water filter'], out: ['ماي', 'water'], part: 0, need: () => G.flags.gen ? null : tr('يحتاج مولدة المول', 'needs the mall generator') },
-  med: { n: ['معمل دوه بالصيدلية', 'Pharmacy medicine lab'], out: ['دوه', 'medicine'], part: 1, need: () => here('noor') ? null : tr('يحتاج نور وياك', 'needs Noor with you') },
+  med: { n: ['معمل دوه بالصيدلية', 'Pharmacy medicine lab'], out: ['دوه', 'medicine'], part: 1, need: () => here('noor') || atPost('noor') ? null : tr('يحتاج نور وياك', 'needs Noor with you') },
   arms: { n: ['ورشة سلاح بالمشجب', 'Armory weapon shop'], out: ['رصاص', 'ammo'], part: 1, need: () => G.flags.lk_armory ? null : tr('يحتاج تفتح المشجب', 'needs the armory unlocked') }
 };
 const facCost = (k, lv) => { const c = { scrap: 5 + lv * 4 }; if (FAC[k].part) c.parts = lv + 1; return c; };
@@ -761,10 +780,10 @@ const CRAFT = [['pipe', { scrap: 2 }], ['wrench', { scrap: 4 }], ['cleaver', { s
 async function baseMenu() {
   for (;;) {
     const o = [];
-    for (const k in FAC) { const f = FAC[k], lv = G.fac[k], nd = f.need(); if (lv >= 3) continue; const c = facCost(k, lv); o.push({ t: L(f.n) + ' (' + lv + '/3)  —  ' + (nd || costStr(c)), c, nd, fn: () => { G.fac[k]++; toast(tr('انبنى ✓ ينتج ' + L(f.out) + ' كل يوم.', 'Built ✓ produces ' + L(f.out) + ' every day.')); } }); }
+    for (const k in FAC) { const f = FAC[k], lv = G.fac[k], nd = f.need(); if (lv >= 3) continue; const c = facCost(k, lv); o.push({ t: L(f.n) + ' (' + lv + '/3)  —  ' + (nd || costStr(c)), c, nd, fn: () => { G.fac[k]++; const jk = Object.keys(WORK).find(w => WORK[w].fac === k); toast(tr((lv ? 'تطوّر ✓ ' : 'اشتغل ✓ ') + L(f.n) + ': العمال يطلّعون ' + L(f.out) + ' بإيدهم ويشيلوه للمخزن. يشيل ' + G.fac[k] * 2 + ' عمال — وزّعهم من المستعمرة (K).', (lv ? 'Upgraded ✓ ' : 'Running ✓ ') + L(f.n) + ': workers make ' + L(f.out) + ' by hand and carry it to storage. Holds ' + G.fac[k] * 2 + ' workers — assign them in the colony (K).'), 9000); if (!lv && (k === 'water' || k === 'fuel')) setTimeout(rebuildWorld, 50); if (jk && idleN() > 0 && !G.col.jobs[jk]) G.col.jobs[jk] = 1; } }); }
     for (const k in LINKS) { const l = LINKS[k]; if (G.links[k]) continue; const nd = l.need(); o.push({ t: L(l.n) + ': ' + L(l.na) + ' ↔ ' + L(l.nb) + '  —  ' + (nd || costStr(l.cost)), c: l.cost, nd, fn: () => { G.links[k] = 1; toast(tr('انبنى ' + L(l.n) + '! مدخله علامة مضوية عالأرض داخل المول يم الباب، والثانية بالطرف الآخر. أوكف عليها واضغط E.', L(l.n) + ' built! Its entrance is a glowing floor pad inside the mall by the door, and another at the far end. Stand on it and press E.'), 9000); } }); }
-    if (!G.conv.hosp) o.push({ t: tr('مستشفى كبير خلف المول', 'Big hospital behind the mall') + '  —  ' + costStr({ scrap: 22, parts: 4 }), c: { scrap: 22, parts: 4 }, fn: () => convert('hosp') });
-    if (!G.conv.camp) o.push({ t: tr('معسكر تدريب جنود', 'Soldier training camp') + '  —  ' + costStr({ scrap: 18, parts: 3 }), c: { scrap: 18, parts: 3 }, fn: () => convert('camp') });
+    if (!op('hosp')) o.push({ t: tr('المستشفى خلف المول: موجود بس مهجور — روح لبابه وحصّنه', 'The hospital behind the mall exists but is abandoned — go to its door and fortify it'), c: {}, nd: tr('روح لباب المستشفى (اتبع اسمه بالخريطة) واضغط E', 'Go to the hospital door (follow its name on the map) and press E') });
+    if (!op('camp')) o.push({ t: tr('ساحة المعسكر: موجودة بس مفتوحة — روح لبابها وحصّنها', 'The camp yard exists but is open — go to its gate and fortify it'), c: {}, nd: tr('روح لباب المعسكر واضغط E', 'Go to the camp gate and press E') });
     if (G.fac.arms > 0) for (const [w, c] of CRAFT) o.push({ t: tr('اصنع ', 'Craft ') + L(WEAPONS[w].n) + '  —  ' + costStr(c), c, fn: () => { G.weps[w] = WEAPONS[w].dur; } });
     const labels = o.map(x => x.t); labels.push(tr('خلص', 'Done'));
     const i = await say('me', tr('شنو نبني بالمقر؟  (سكراب: ' + (G.inv.scrap || 0) + '، قطع غيار: ' + (G.inv.parts || 0) + ')', 'What do we build?  (scrap: ' + (G.inv.scrap || 0) + ', parts: ' + (G.inv.parts || 0) + ')'), labels); if (i >= o.length) return;
@@ -773,6 +792,7 @@ async function baseMenu() {
   }
 }
 function facDay(notes) {
+  return;
   const f = G.fac, out = [];
   if (f.fuel) { add('fuel', f.fuel); out.push(tr('بانزين ×', 'fuel ×') + f.fuel); }
   if (f.food) { add('samoon', f.food * 2); out.push(tr('صمون ×', 'bread ×') + f.food * 2); }
@@ -788,16 +808,17 @@ async function travel(to) {
   await wait(250); $('#fade').classList.remove('on'); R.busy--;
 }
 function fixJobs() { const j = G.col.jobs; let over = -idleN(); for (const k of ['scav', 'farm', 'doc', 'medic', 'guard', 'soldier']) { if (over <= 0) break; const d = Math.min(j[k], over); j[k] -= d; over -= d; } }
-function applyConv() { if (!G || !G.conv) return; for (const k in G.conv) { const b = World.buildings[G.conv[k]]; if (!b) continue; b.type = k === 'hosp' ? 'hospital' : 'camp'; b.st = k === 'hosp' ? 1 : 5; b.roof = null; } }
-function pickConv(k) { const tx = S.mall.x / 16 + (k === 'hosp' ? 0 : -18), ty = S.mall.y / 16 + (k === 'hosp' ? -20 : 2); let best = -1, bd = 1e9; for (const b of World.buildings) { if (b.type !== 'house' || Object.values(G.conv).includes(b.i)) continue; const d = hyp(b.x + b.w / 2 - tx, b.y + b.h / 2 - ty); if (d < bd) { bd = d; best = b.i; } } return best; }
+function applyConv() { if (!G || !G.conv) return; for (const k in G.conv) { const b = World.buildings[G.conv[k]]; if (!b || !CONVT[k]) continue; b.type = CONVT[k][0]; b.st = CONVT[k][1]; b.roof = null; b.fort = (op(k) || (k === 'water' && G.fac.water) || (k === 'fuel' && G.fac.fuel)) ? 1 : 0; if (b.fort) for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) World.safe[World.I(x, y)] = 1; } }
+function pickConv(k) { const tx = S.mall.x / 16 + CONVP[k][0], ty = S.mall.y / 16 + CONVP[k][1]; let best = -1, bd = 1e9; for (const b of World.buildings) { if (b.type !== 'house' || Object.values(G.conv).includes(b.i)) continue; const d = hyp(b.x + b.w / 2 - tx, b.y + b.h / 2 - ty); if (d < bd) { bd = d; best = b.i; } } return best; }
 async function convert(k) { const i = pickConv(k); if (i < 0) return; G.conv[k] = i; R.busy++; $('#fade').classList.add('on'); await wait(400); World.gen(); for (const g in World.gates) if (G.flags[g]) World.setGate(g, true); for (const l in World.locks) if (G.flags['lk_' + l]) World.setLock(l, true); applyConv(); applyFloor(); View3D.build(); buildObjs(); syncNpcs(); $('#fade').classList.remove('on'); R.busy--; toast(k === 'hosp' ? tr('انبنى المستشفى خلف المول! صار يعالج الجرحى، وتكدر توصّله جثث الزومبي حتى يحاولون يرجعوهم ناس. ووزّع مسعفين من المستعمرة (K).', 'The hospital is built behind the mall! It treats the wounded, and you can bring zombie bodies so they try to bring them back. Assign medics in the colony (K).') : tr('انبنى المعسكر يم المول! هسه تكدر تحوّل الناجين لجنود من المستعمرة (K). الجنود يدافعون بالليل ويصرفون رصاص.', 'The camp is built next to the mall! Turn survivors into soldiers in the colony (K). Soldiers defend at night and use ammo.'), 9000); save(true); }
 async function hospMenu() {
-  const c = G.col, n = G.inv.zbody || 0, ch = Math.round(Math.min(.75, .12 + c.research * .01 + c.jobs.medic * .08 + (here('noor') ? .1 : 0)) * 100), o = [];
+  const c = G.col, n = G.inv.zbody || 0, ch = Math.round(Math.min(.8, .12 + c.research * .01 + c.jobs.medic * .08 + (atPost('noor', 'hosp') ? .18 : here('noor') ? .1 : 0)) * 100), o = [];
+  if (has('alibody')) { take('alibody'); G.flags.aliQ = 3; await say('noor', tr('هذا علي ابن أم علي؟ مدّدوه عالسرير.. الليلة ما أنام. باجر الصبح تعال.', 'This is Um Ali\'s son? Lay him on the bed... I will not sleep tonight. Come back in the morning.')); save(true); return; }
   if (n) o.push(tr('سلّم ' + n + ' جثث للمستشفى', 'Deliver ' + n + ' bodies'));
   o.push(tr('عالجوني', 'Treat me'), tr('ولا شي', 'Never mind'));
   const i = await say(tr('المستشفى', 'Hospital'), tr('جثث تنتظر العلاج: ' + c.bodies + '   ·   فرصة الإرجاع: ' + ch + '%   ·   مسعفين: ' + c.jobs.medic + '\nالجثث تتعالج بالليل، والنتيجة تنكتب بالدفتر الصبح.', 'Bodies waiting: ' + c.bodies + '   ·   Revival chance: ' + ch + '%   ·   Medics: ' + c.jobs.medic + '\nBodies are treated overnight; results go in the diary.'), o);
   if (n && i === 0) { take('zbody', n); c.bodies += n; sfx('fix'); return toast(tr('سلّمت ' + n + ' جثث. الليلة يحاولون وياهم.', 'Delivered ' + n + ' bodies. They will try tonight.')); }
-  if (o[i] === tr('عالجوني', 'Treat me')) { if (!c.jobs.medic && !here('noor')) return toast(tr('ماكو مسعف بالمستشفى. وزّع مسعف من المستعمرة.', 'No medic on duty. Assign one in the colony.')); G.hp = 100; sfx('fix'); toast(tr('تعالجت ✓', 'Treated ✓')); }
+  if (o[i] === tr('عالجوني', 'Treat me')) { if (!c.jobs.medic && !here('noor') && !atPost('noor')) return toast(tr('ماكو مسعف بالمستشفى. وزّع مسعف من المستعمرة.', 'No medic on duty. Assign one in the colony.')); G.hp = 100; sfx('fix'); toast(tr('تعالجت ✓', 'Treated ✓')); }
 }
 // ---------------- night raids
 function buildFlow() {
@@ -810,19 +831,20 @@ function flowDir(z) {
   return Math.atan2(S.mallDoor.y + 14 - z.y, S.mallDoor.x - z.x);
 }
 function raidPower() { return Math.min(45, Math.round(6 + G.day * 1.5 + G.col.pop * .6)); }
-function startRaid() {
-  G.raidDay = G.day; const n = raidPower(), d = S.mallDoor; let made = 0; buildFlow();
+function startRaid(scale, day) {
+  G.raidDay = G.day; const n = Math.round(raidPower() * (scale || 1)), d = S.mallDoor; let made = 0; buildFlow();
   for (let t = 0; t < n * 6 && made < n; t++) { const a = rand(0, 6.28), r = rand(240, 420), x = d.x + Math.cos(a) * r, y = d.y + 40 + Math.abs(Math.sin(a)) * r * .8; if (solidAt(x, y, 1) || World.bAt(x >> 4, y >> 4) || R.flow[(x >> 4) + (y >> 4) * World.W] < 0) continue; const z = mkZ(ztype(2), x, y); z.raid = 1; z.alert = 0; R.zombies.push(z); made++; }
   const c = G.col, defs = []; const nd = Math.min(12, c.jobs.guard + c.jobs.soldier);
   for (let i = 0; i < nd; i++) { const sol = i < c.jobs.soldier, k = i - (nd - 1) / 2; defs.push({ id: 'df' + i, kind: sol ? 'soldier' : 'guard', x: d.x + k * 18, y: d.y + 34 + (i % 2) * 12, cd: rand(0, 1), look: sol ? Object.assign({}, LOOK.sol, { id: 'dfs' }) : Object.assign({}, LOOK.sv3, { id: 'dfg' }), face: 0 }); }
-  R.defs = defs; R.raid = { n: made, killed: 0, dmg: 0 }; sfx('horn'); R.shake = .4;
-  toast(tr('هجمة الليل! ' + made + ' زومبي جايين للمول. ' + (nd ? nd + ' مدافعين واكفين عالباب.' : 'وماكو مدافعين.. دافع إنت!'), 'Night raid! ' + made + ' zombies heading for the mall. ' + (nd ? nd + ' defenders at the door.' : 'No defenders... defend it yourself!')), 8000);
+  const ng = G.day >= 4 ? Math.min(3, Math.floor((G.day - 1) / 3) * (scale || 1)) : 0; for (let i = 0; i < ng; i++) { const a = rand(0, 6.28), z = spawnGiant(d.x + Math.cos(a) * 300, d.y + 60 + Math.abs(Math.sin(a)) * 220); if (z && !solidAt(z.x, z.y, 1) && R.flow[(z.x >> 4) + (z.y >> 4) * World.W] >= 0) { z.raid = 1; made++; } else if (z) R.zombies.splice(R.zombies.indexOf(z), 1); }
+  R.defs = defs; R.raid = { n: made, killed: 0, dmg: 0, day: !!day }; sfx('horn'); R.shake = .4;
+  toast(tr((day ? 'هجمة بالنهار! ' : 'هجمة الليل! ') + made + ' زومبي جايين للمول' + (ng ? ' (وبيهم ضخم)' : '') + '. ' + (nd ? nd + ' مدافعين واكفين عالباب.' : 'وماكو مدافعين.. دافع إنت!'), 'Night raid! ' + made + ' zombies heading for the mall. ' + (nd ? nd + ' defenders at the door.' : 'No defenders... defend it yourself!')), 8000);
 }
 function updRaid(dt) {
   const R2 = R.raid; if (!R2) return; const left = R.zombies.filter(z => z.raid);
   for (const df of R.defs) { df.cd -= dt; const rng = df.kind === 'soldier' ? 150 : 40; let t = null, bd = rng; for (const z of left) { const d = hyp(z.x - df.x, z.y - df.y); if (d < bd) { bd = d; t = z; } } if (!t) continue; const a = Math.atan2(t.y - df.y, t.x - df.x); df.face = Math.PI / 2 - a;
     if (df.cd <= 0) { if (df.kind === 'soldier') { df.cd = 1.1; R.fx.push({ k: 'line', x: df.x, y: df.y - 9, x2: t.x, y2: t.y - 9, t: .07 }); if (Math.random() < .5) sfx('shot'); hitZ(t, G.col.noAmmo ? 8 : 20, a, 50); } else { df.cd = .9; hitZ(t, 10, a, 90); } } }
-  if (!left.length || G.time >= 28.5) endRaid();
+  if (!left.length || G.time >= 28.5 || (R2.day && G.time % 24 >= 17.5)) endRaid();
 }
 function endRaid() {
   const R2 = R.raid; if (!R2) return; R.raid = null; R.defs = []; for (const z of R.zombies) z.raid = 0;
@@ -848,7 +870,7 @@ for (let i = 0; i < 4; i++) SC['st' + i] = async () => {
   const a = await say('st' + i, pick(L([['الحمد لله! ظنيت محد راح يجي.. صارلي يومين محاصر.', 'إنت بشر؟ احلف. والله ظنيتك زومبي يمشي عدل.'], ['Thank God! I thought nobody would come... trapped for two days.', 'Are you human? Swear it. I thought you were a zombie that walks straight.']])), [tr('روح للمول.. اكو مكان إلك وشغل', 'Go to the mall... there is room and work for you'), tr('مو هسه', 'Not now')]);
   if (a !== 0) return; if (!G.flags.mall) return toast(tr('بعد ما عندي مقر آمن أوديه بيه. لازم أوصل للمول أول.', "I don't have a safe base yet. I need to reach the mall first."));
   if (G.col.pop >= colCap()) return toast(tr('المول مليان. افتح طابق ثاني من الدرج.', 'The mall is full. Open another floor from the stairs.'));
-  G.col.pop++; G.strand.splice(G.strand.indexOf(st), 1); syncNpcs(); sfx('fix'); toast(tr('الناجي راح للمول! وزّعله شغل من المستعمرة (K).', 'The survivor went to the mall! Give them a job in the colony (K).'), 6000);
+  G.col.pop++; G.col.trainee = (G.col.trainee || 0) + 1; G.strand.splice(G.strand.indexOf(st), 1); syncNpcs(); sfx('fix'); toast(tr('الناجي راح للمول! اليوم يتدرّب، وباجر يستلم شغل.', 'The survivor went to the mall! Trains today, starts work tomorrow.'), 6000);
 };
 const colCap = () => 8 + (G.flr >= 2 ? 8 : 0) + (G.flr >= 3 ? 4 : 0);
 function applyFloor() {
@@ -939,10 +961,10 @@ async function pepsi() {
   if (here('noor')) { kind = 'good'; await say('noor', tr('لحظة.. الغاز الفاسد يتعادل ويه مادة التانين. يعني.. چاي. چاي ثكيل، مخدّر زين.', 'Wait... spoiled fizz is neutralised by tannin. Meaning... tea. Strong, properly brewed tea.')); if (here('aj')) await say('aj', tr('كلتلكم القوري ينفع! محد يسمعني!', 'I TOLD you the teapot matters! Nobody listens to me!')); }
   else await say('me', tr('لو أكو واحد يفتهم بالدوه وياي.. جان عرفنا شنسوي.', 'If only someone who understands medicine were with me... we would know what to do.'));
   if (G.pages.length >= 5) { const i = await say('me', tr('الأوراق المشكوكة الخمسة كلها وياي. أحس القصة تريد تخلص بطريقة ثانية..', 'I have all five torn pages. I feel the story wants to end another way...'), [tr('سدّ الدفتر', 'Close the notebook'), tr('كمّل القصة', 'Keep the story going')]); if (i === 0) kind = 'secret'; }
-  f.ended = kind; await notebook(L(END[kind](G)), { title: tr('الصفحة الأخيرة', 'The Last Page') });
-  if (kind === 'good') R.zombies.length = 0;
+  f.ended = kind; await notebook(L(END[kind](G)), { title: tr('نهاية الدفتر الأول', 'End of Notebook One') });
+  f.ch2 = 1; await notebook(L(CH2), { title: tr('الدفتر الثاني', 'Notebook Two') }); spawnGiant(S.g4.x - 60, S.g4.y + 10, { big: 1 });
   save(true); await aboutPanel(true);
-  toast(tr('تكدر تكمّل تلعب وتستكشف بغداد براحتك.', 'You can keep playing and exploring Baghdad freely.'), 7000);
+  toast(tr('القصة ما خلصت.. الدفتر الثاني بدا. شوف المهمة فوك.', 'The story is not over... notebook two has begun. See the objective at the top.'), 7000);
 }
 
 // ---------------------------------------------------------------- day cycle
@@ -960,7 +982,8 @@ async function nextDay(slept) {
   G.food = Math.max(0, G.food - 8); G.water = Math.max(0, G.water - 10);
   if (G.shel.tank) { add('water'); notes.push(tr('خزان السطح نطاني قنينة ماي.', 'The roof tank gave me a bottle of water.')); }
   if (G.shel.garden) { add('dates', 2); notes.push(tr('الحديقة طلّعت تمر. الأرض بعدها تحبّنه.', 'The garden gave dates. The land still loves us.')); }
-  if (G.flags.umali) { add('samoon'); notes.push(tr('أم علي خبزتلنا خبز حار.', 'Um Ali baked us hot bread.')); }
+  if (G.flags.umali && !umaliMall()) { add('samoon'); notes.push(tr('أم علي خبزتلنا خبز حار.', 'Um Ali baked us hot bread.')); }
+  lifeDay(notes);
   if (has('kettle') && here('aj')) { add('tea'); notes.push(tr('أبو جاسم خدّر چاي. يكول "بلا چاي ماكو قيادة".', 'Abu Jasim brewed tea. He says "no tea, no driving".')); }
   colonyDay(notes); facDay(notes);
   for (const id of COMPS) {
@@ -1045,8 +1068,8 @@ function interact() { if (R.busy > 0) return; if (G.inVeh >= 0) return exitVeh()
 function nearestLoot() { let b = null, bd = 1e9; for (const c of World.containers) { if (G.floor || G.looted[c.id] || !c.b || c.x > 56 * 16) continue; const d = hyp(c.x - G.x, c.y - G.y); if (d < bd) { bd = d; b = c; } } return b; }
 function objective() {
   const f = G.flags;
-  if (R.raid) return [tr('هجمة الليل! دافع عن المول — باقي ' + R.zombies.filter(z => z.raid).length + ' زومبي', 'Night raid! Defend the mall — ' + R.zombies.filter(z => z.raid).length + ' zombies left'), S.mallDoor];
-  if (f.ended) return [tr('عيش يومك.. وابقى عايش', 'Live your day... and stay alive'), null];
+  if (R.raid) return [tr((R.raid.day ? 'هجمة بالنهار' : 'هجمة الليل') + '! دافع عن المول — باقي ' + R.zombies.filter(z => z.raid).length + ' زومبي', 'Night raid! Defend the mall — ' + R.zombies.filter(z => z.raid).length + ' zombies left'), S.mallDoor];
+  if (f.ended) return ch2Obj();
   if (!f.pipe) return [tr('اطلع من البيت ودوّر شي تدافع بيه عن نفسك', 'Leave the house and find something to defend yourself with'), S.pipe];
   if (!f.hassan) return [tr('أبو حسن واكف يم الباب.. تصرّف ويّاه', 'Abu Hassan is by the door... deal with him'), R.zombies.find(z => z.type === 'hassan') || S.hassan];
   if (G.lootN < 3 && !f.ajMet) return [tr('ادخل البيوت وفتّش الثلاجات والكناتير (النقاط الصفرة) (' + G.lootN + '/3)', 'Enter houses and search fridges and cupboards (yellow dots) (' + G.lootN + '/3)'), R.needT || nearestLoot()];
@@ -1081,7 +1104,7 @@ function update(dt) {
   if (R.busy > 0) return;
   if (R.atk > 0) R.atk -= dt; if (R.swing > 0) R.swing -= dt; if (R.inv > 0) R.inv -= dt; if (R.mouse.t > 0) R.mouse.t -= dt;
   const pb = World.bAt(G.x >> 4, G.y >> 4); R.pb = G.inVeh >= 0 ? 0 : pb; R.pInside = !!R.pb; R.pSafe = World.safe[World.I(G.x >> 4, G.y >> 4)] === 1 && G.inVeh < 0;
-  updPlayer(dt); updZombies(dt); updComps(dt); updWorkers(dt);
+  updPlayer(dt); updZombies(dt); updComps(dt); updWorkers(dt); lifeTick(dt);
   if (G.inVeh < 0) findNear(); else R.near = null;
   // needs & time
   G.time += dt / 20; const hr = dt / 20;
@@ -1094,7 +1117,7 @@ function update(dt) {
   if (G.time >= 30) { endRaid(); nextDay(false); }
   const h = G.time % 24; if (h >= 18.5 && h < 19 && G.time < 24) tip('night' + G.day, 'الدنيا صارت ليل.. الزومبي أخطر. نام بالبيت أو بالمول، أو بأي بيت بيه جرباية.', 'Night is falling... zombies get worse. Sleep at home, at the mall, or in any house with a bed.');
   // safe-zone autosave + story triggers
-  if (G.flags.mall && !G.conv.hosp && G.col.pop >= 2) tip('hospHint', 'تكدر تبني مستشفى ومعسكر من ميز "تطوير المقر" بالمول.', 'You can build a hospital and a camp from the "Develop the base" desk in the mall.');
+  if (G.flags.mall && !op('hosp') && G.col.pop >= 2) tip('hospHint2', 'المستشفى خلف المول موجود بس مهجور. نظّفه من الزومبي وروح لبابه وحصّنه.', 'The hospital behind the mall is there but abandoned. Clear the zombies, go to its door and fortify it.');
   if (R.pSafe && !R.wasSafe) { const mall = pb && World.buildings[pb - 1].type === 'mall'; G.safe = mall ? { x: S.mallBed.x, y: S.mallBed.y + 26 } : { x: S.start.x, y: S.start.y }; if (mall && !G.flags.mall) { G.flags.mall = 1; toast(tr('مول الكرادة: مكان آمن. الزومبي ما يدخلون هنا.', 'Karrada mall: a safe place. Zombies do not come in here.'), 6000); } if (R.t - R.lastAuto > 25) save(true); }
   if (R.pSafe && G.flags.gen && pb && World.buildings[pb - 1].type === 'mall') tip('board', 'ميز "تطوير المقر" بالمول: تبني منه مصفى بانزين ومطبخ وفلتر ماي وممرات.', 'The "Develop the base" desk in the mall: build a refinery, kitchen, water filter and passages.');
   R.wasSafe = R.pSafe;
@@ -1138,7 +1161,7 @@ function render() {
     // talk markers
     for (const n of R.npcs) if (!G.floor && !n.follow && !n.hidden && see(n) && Math.sin(R.t * 4) > -.3) { const p = View3D.project(n.x, n.y, 1.55); ctx.fillStyle = '#000'; ctx.fillRect(p.x - 4, p.y - 16, 8, 18); ctx.fillStyle = '#e8cf7a'; ctx.fillRect(p.x - 2, p.y - 14, 4, 9); ctx.fillRect(p.x - 2, p.y - 3, 4, 3); }
     // zombie health bars
-    for (const z of R.act) if (z.hp < z.s.hp && see(z)) { const boss = z.type === 'boss', p = View3D.project(z.x, z.y, boss ? 2.7 : 1.4), bw = boss ? 90 : 34; ctx.fillStyle = '#000'; ctx.fillRect(p.x - bw / 2 - 1, p.y - 4, bw + 2, 6); ctx.fillStyle = '#c33'; ctx.fillRect(p.x - bw / 2, p.y - 3, Math.max(0, bw * z.hp / z.s.hp), 4); }
+    for (const z of R.act) if (z.hp < z.s.hp && see(z)) { const boss = z.type === 'boss' || z.type === 'giant', p = View3D.project(z.x, z.y, boss ? 2.9 : 1.4), bw = boss ? 90 : 34; ctx.fillStyle = '#000'; ctx.fillRect(p.x - bw / 2 - 1, p.y - 4, bw + 2, 6); ctx.fillStyle = '#c33'; ctx.fillRect(p.x - bw / 2, p.y - 3, Math.max(0, bw * z.hp / z.s.hp), 4); }
     // objective marker
     if (R.objT) { const p = View3D.project(R.objT.x, R.objT.y, 2.1), by = p.y + Math.sin(R.t * 5) * 5; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(p.x - 13, by - 14); ctx.lineTo(p.x + 13, by - 14); ctx.lineTo(p.x, by + 8); ctx.fill(); ctx.fillStyle = '#e8cf7a'; ctx.beginPath(); ctx.moveTo(p.x - 9, by - 12); ctx.lineTo(p.x + 9, by - 12); ctx.lineTo(p.x, by + 4); ctx.fill(); }
   }
@@ -1149,7 +1172,7 @@ function render() {
   ctx.font = '700 17px Handjet, Tahoma, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = LANG === 'ar' ? 'rtl' : 'ltr';
   for (const b of R.bubbles) {
     const e = b.e; if (e.hidden || (e !== G && !see(e))) continue;
-    const p = View3D.project(e.x, e.y, e.type === 'boss' ? 2.9 : 1.55), bx = Math.round(p.x), by = Math.round(p.y) - 18, tw = ctx.measureText(b.text).width + 14;
+    const p = View3D.project(e.x, e.y, e.type === 'boss' || e.type === 'giant' ? 3.1 : 1.55), bx = Math.round(p.x), by = Math.round(p.y) - 18, tw = ctx.measureText(b.text).width + 14;
     if (bx < -100 || bx > w + 100 || by < -20 || by > h + 20) continue;
     ctx.globalAlpha = Math.min(1, b.t * 3); ctx.fillStyle = '#000'; ctx.fillRect(bx - tw / 2 - 2, by - 13, tw + 4, 26); ctx.fillStyle = e.s ? '#dfeccf' : '#fff'; ctx.fillRect(bx - tw / 2, by - 11, tw, 22); ctx.fillStyle = '#000'; ctx.fillRect(bx - 3, by + 11, 6, 3);
     ctx.fillStyle = e.s ? '#24401a' : '#16161c'; ctx.fillText(b.text, bx, by + 1); ctx.globalAlpha = 1;
@@ -1159,7 +1182,7 @@ function render() {
     ctx.font = '700 18px Handjet, Tahoma, sans-serif'; ctx.direction = LANG === 'ar' ? 'rtl' : 'ltr';
     for (const l of R.labels) { if (l.b === pb || Math.abs(l.x - G.x) > 520 || Math.abs(l.y - G.y) > 520) continue; const p = View3D.project(l.x, l.y, l.h), t = L(l.t), tw = ctx.measureText(t).width + 16; ctx.fillStyle = 'rgba(8,8,12,.82)'; ctx.fillRect(p.x - tw / 2, p.y - 13, tw, 26); ctx.fillStyle = l.c; ctx.fillRect(p.x - tw / 2, p.y + 11, tw, 2); ctx.fillText(t, p.x, p.y + 1); }
     for (const k in LINKS) if (G.links[k] && !G.floor) for (const sp of [[LINKS[k].a, LINKS[k].nb], [LINKS[k].b, LINKS[k].na]]) { const e = S[sp[0]], eb = World.bAt(e.x >> 4, e.y >> 4); if ((eb && eb !== pb) || Math.abs(e.x - G.x) > 360 || Math.abs(e.y - G.y) > 360) continue; const p = View3D.project(e.x, e.y, 1.1), t = L(LINKS[k].n) + (LANG === 'ar' ? ' ← ' : ' → ') + L(sp[1]), tw = ctx.measureText(t).width + 14; ctx.fillStyle = 'rgba(8,8,12,.85)'; ctx.fillRect(p.x - tw / 2, p.y - 12, tw, 24); ctx.fillStyle = '#9fe0ff'; ctx.fillText(t, p.x, p.y + 1); }
-    if (R.busy === 0) { if (R.objT) guideArrow(R.objT, '#e8cf7a', tr('المهمة', 'Objective'), 96); if (R.needT) guideArrow(R.needT, '#6cc4ff', R.needT.label, 62); let ns = null, nd = 1e9; for (const st of G.strand) { const d = hyp(st.x - G.x, st.y - G.y); if (d < nd) { nd = d; ns = st; } } if (ns && !R.raid) guideArrow(ns, '#7fe07f', tr('ناجي محاصر', 'Trapped survivor'), 130); }
+    if (R.busy === 0) { if (R.objT) guideArrow(R.objT, '#e8cf7a', tr('المهمة', 'Objective'), 96); if (R.needT) guideArrow(R.needT, '#6cc4ff', R.needT.label, 62); let ns = null, nd = 1e9; for (const st of G.strand) { const d = hyp(st.x - G.x, st.y - G.y); if (d < nd) { nd = d; ns = st; } } if (ns && !R.raid) guideArrow(ns, '#7fe07f', tr('ناجي محاصر', 'Trapped survivor'), 130); if (R.side && !R.raid) guideArrow(R.side, '#ff9ad0', R.side.label, 112); }
   }
 }
 function guideArrow(tg, col, label, rad) {
@@ -1289,8 +1312,337 @@ addEventListener('beforeunload', () => { if (R.mode === 'play' && R.busy === 0 &
 
 let last = performance.now();
 function loop(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; try { update(dt); render(); } catch (e) { console.error(e); } requestAnimationFrame(loop); }
+// ================================================================ LIFE — real work you can see, an endless city, the story that keeps going
+const op = k => !!(G.fort && G.fort[k]);
+const atPost = (id, k) => { const c = G.comps[id]; return !!c && c.st === 'post' && (!k || c.post === k); };
+const bOfK = k => G.conv[k] != null ? World.buildings[G.conv[k]] : null;
+const bType = t => World.buildings.find(b => b.type === t);
+const mallB = () => World.buildings[S._mall.b - 1];
+const inB = (b, x, y) => !!b && x >= b.x * 16 && x < (b.x + b.w) * 16 && y >= b.y * 16 && y < (b.y + b.h) * 16;
+const bPt = (b, fx, fy) => ({ x: (b.x + 1 + fx * (b.w - 2)) * 16 + 8, y: (b.y + 1 + fy * (b.h - 2)) * 16 + 8 });
+const umaliMall = () => !!(G.flags.umali && G.flags.mall);
+const CONVT = { hosp: ['hospital', 1], camp: ['camp', 5], water: ['waterplant', 2], fuel: ['refinery', 3] };
+const CONVP = { hosp: [0, -20], camp: [-18, 2], water: [16, -8], fuel: [-9, 17] };
+const WORK = {
+  cook: { fac: 'food', st: 'stove', out: 'samoon', n: lv => 1 + (lv >> 1), cyc: 24, l: [['العجين خمّر.. الصمون بالفرن.', 'صمون حار! محد يلمس لحد ما يبرد.'], ['The dough rose... bread in the oven.', 'Hot bread! Nobody touch it till it cools.']] },
+  water: { fac: 'water', st: 'tank', out: 'water', n: lv => 1 + (lv >> 1), cyc: 22, l: [['الفلتر يشتغل.. الماي صافي.', 'قنينة.. قنينتين.. عبّيناهن.'], ['The filter is running... clean water.', 'One bottle... two... filled.']] },
+  fuel: { fac: 'fuel', st: 'still', out: 'fuel', n: () => 1, cyc: 34, l: [['ريحة البانزين.. أحلى من العطر.', 'جليكان جديد طالع.'], ['Smell of petrol... better than perfume.', 'A fresh can coming out.']] },
+  pharm: { fac: 'med', st: 'bench', out: 'bandage', n: () => 1, cyc: 30, l: [['لفّافات معقّمة.. حاضرة.', 'نور كالت: النظافة نص العلاج.'], ['Sterile bandages... ready.', 'Noor says cleanliness is half the cure.']] },
+  smith: { fac: 'arms', st: 'anvil', out: 'ammo9', n: lv => 2 + lv, cyc: 30, l: [['رصاص معبّى بالإيد.. دقيق.', 'طك.. طك.. طلع شريط.'], ['Hand-loaded rounds... precise.', 'Clack... clack... a clip is done.']] }
+};
+const WORKB = { cook: () => mallB(), water: () => bOfK('water'), fuel: () => bOfK('fuel'), pharm: () => bType('pharmacy'), smith: () => bType('armory') };
+const JOBORD = ['soldier', 'guard', 'scav', 'farm', 'doc', 'medic', 'cook', 'water', 'fuel', 'pharm', 'smith'];
+const JOBX = { cook: ['طبّاخين', 'Cooks', 'بمطبخ المول: يطلّعون صمون حار (يحتاج المطبخ)', 'Mall kitchen: bake bread (needs the kitchen)'], water: ['عمال الماي', 'Water workers', 'بمحطة الماي: يعبّون قناني (يحتاج المحطة)', 'Water plant: fill bottles (needs the plant)'], fuel: ['عمال المصفى', 'Refinery workers', 'بالمصفى: يطلّعون بانزين (يحتاج المصفى)', 'Refinery: make fuel (needs the refinery)'], pharm: ['صيادلة', 'Pharmacists', 'بالصيدلية: لفّافات وإسعافات (يحتاج المعمل)', 'Pharmacy: bandages & medkits (needs the lab)'], smith: ['عمال المشجب', 'Armorers', 'بالمشجب: يعبّون رصاص (يحتاج الورشة)', 'Armory: load ammo (needs the shop)'] };
+ITEMS.veg = { n: ['خضرة', 'Vegetables'], food: 14 };
+ITEMS.alibody = { n: ['علي (فاقد الوعي)', 'Ali (unconscious)'], q: 1, d: ['وصّله للمستشفى، لنور', 'Take him to Noor at the hospital'] };
+FOODS.push('veg');
+NPC.umali.n = ['أم علي', 'Um Ali']; NPC.ali = { n: ['علي', 'Ali'] }; LOOK.ali = { id: 'al', shirt: '#1f7a3a', pants: '#2c2f36', hair: '#1b1410' };
+Object.assign(ZT, { giant: { hp: 340, sp: 10, dmg: 22 }, doctor: { hp: 30, sp: 15, dmg: 7 }, ali: { hp: 45, sp: 13, dmg: 3 } });
+Object.assign(ZMODEL, { giant: 'Z01' });
+Object.assign(ZLINES, {
+  giant: [['أنا مو ضخم.. عظامي عريضة.', 'جوعاااان..', 'منو أكل الكبة مالتي؟!', 'هههههغغغ..'], ["I'm not big... I'm big-boned.", 'Hungryyyy...', 'Who ate my kubba?!', 'Hhhhhggg...']],
+  doctor: [['الدور.. خذ رقم..', 'افتح حلگك.. آآآ..', 'تعال باچر..'], ['Take a number...', 'Open wide... aaah...', 'Come back tomorrow...']],
+  ali: [['كتاب.. كتااااب..', 'يمّه.. شنو الغدا..', 'المتنبي.. جمعة..'], ['Book... boooook...', 'Mom... what is for lunch...', 'Mutanabbi... Friday...']]
+});
+
+// ---------------------------------------------------------------- setup per world build
+function setupLife() {
+  for (const k of ['hosp', 'camp', 'water', 'fuel']) if (G.conv[k] == null) { const i = pickConv(k); if (i >= 0) G.conv[k] = i; }
+  const m = mallB(), pin = (b, off) => { const y = b.door === 'S' ? b.dy - 1 : b.dy + 1; return World.freeNear((b.dx + off) * 16 + 8, y * 16 + 8); };
+  S.padMH = World.freeNear(128 * 16 + 8, 50 * 16 + 8); S.padMC = World.freeNear(130 * 16 + 8, 50 * 16 + 8); S.padMW = World.freeNear(132 * 16 + 8, 50 * 16 + 8); S.padMF = World.freeNear(132 * 16 + 8, 47 * 16 + 8);
+  const H = bOfK('hosp'), C = bOfK('camp'), Wb = bOfK('water'), Fb = bOfK('fuel');
+  if (H) S.padHM = pin(H, 1); if (C) S.padCM = pin(C, 1); if (Wb) S.padWM = pin(Wb, 1); if (Fb) S.padFM = pin(Fb, 1);
+  S.padHK = World.freeNear(18 * 16 + 8, 50 * 16 + 8);
+  let mk = null, md = 1e9; for (const b of World.buildings) { if (World.zoneOf(b.x) !== 1 || b.type === 'booth') continue; const d = hyp((b.x + b.w / 2) * 16 - S.haji.x, (b.y + b.h / 2) * 16 - S.haji.y); if (d < md) { md = d; mk = b; } }
+  if (mk) S.padKH = pin(mk, 0);
+  const L2 = (a, b, n, na, nb, cost, need) => ({ a, b, n, na, nb, cost, need });
+  LINKS.mh = L2('padMH', 'padHM', ['ممر سري', 'Secret tunnel'], ['المول', 'Mall'], ['المستشفى', 'Hospital'], { scrap: 10 }, () => op('hosp') ? null : tr('حصّن المستشفى أول', 'fortify the hospital first'));
+  LINKS.mc = L2('padMC', 'padCM', ['ممر سري', 'Secret tunnel'], ['المول', 'Mall'], ['المعسكر', 'Camp'], { scrap: 10 }, () => op('camp') ? null : tr('حصّن المعسكر أول', 'fortify the camp first'));
+  LINKS.mw = L2('padMW', 'padWM', ['ممر سري', 'Secret tunnel'], ['المول', 'Mall'], ['محطة الماي', 'Water plant'], { scrap: 8 }, () => G.fac.water ? null : tr('صلّح محطة الماي أول', 'repair the water plant first'));
+  LINKS.mf = L2('padMF', 'padFM', ['ممر سري', 'Secret tunnel'], ['المول', 'Mall'], ['المصفى', 'Refinery'], { scrap: 10, parts: 2 }, () => G.fac.fuel ? null : tr('صلّح المصفى أول', 'repair the refinery first'));
+  if (S.padKH) LINKS.hk = L2('padHK', 'padKH', ['ممر سري', 'Secret tunnel'], ['البيت', 'Home'], ['السوق', 'Market'], { scrap: 12 }, () => G.flags.g1 ? null : tr('افتح طريق السوق أول', 'open the market road first'));
+  window.IZ_PADS = [['hm', 'tunHome', '#7fc24b'], ['hm', 'tunMall', '#7fc24b'], ['mp', 'brMall', '#6cc4ff'], ['mp', 'brPharm', '#6cc4ff'], ['ma', 'tunMall2', '#e3b62f'], ['ma', 'tunArm', '#e3b62f'], ['mh', 'padMH', '#ff7b7b'], ['mh', 'padHM', '#ff7b7b'], ['mc', 'padMC', '#b8d080'], ['mc', 'padCM', '#b8d080'], ['mw', 'padMW', '#3d8fd6'], ['mw', 'padWM', '#3d8fd6'], ['mf', 'padMF', '#e08a3a'], ['mf', 'padFM', '#e08a3a'], ['hk', 'padHK', '#d8b98a'], ['hk', 'padKH', '#d8b98a']];
+  R.farm = null; R.stSig = ''; R.patients = [];
+}
+function rebuildWorld() {
+  World.gen(); setupLife(); for (const g in World.gates) if (G.flags[g]) World.setGate(g, true); for (const l in World.locks) if (G.flags['lk_' + l]) World.setLock(l, true);
+  applyConv(); applyFloor(); View3D.build(); buildObjs(); syncNpcs(); R.stSig = '';
+}
+async function fortify(k) {
+  const b = bOfK(k); if (!b || op(k)) return;
+  const nm = k === 'hosp' ? tr('المستشفى', 'the hospital') : tr('المعسكر', 'the camp'), cost = k === 'hosp' ? { scrap: 14, parts: 2 } : { scrap: 12, parts: 2 };
+  const inside = R.zombies.filter(z => inB(b, z.x, z.y)).length;
+  if (inside) return toast(tr('اكو ' + inside + ' زومبي داخل ' + nm + '. نظّفه أول، بعدين نحصّنه.', 'There are ' + inside + ' zombies inside ' + nm + '. Clear it first, then fortify.'), 5000);
+  const i = await say('me', k === 'hosp' ? tr('المستشفى موجود.. بس مهجور. الشبابيك مكسورة والباب مخلوع. نحصّنه: أكياس رمل، سياج، ونصلّح المولدة الصغيرة.', 'The hospital is here... just abandoned. Broken windows, door ripped off. We fortify it: sandbags, a fence, and fix its small generator.') : tr('ساحة المعسكر موجودة.. بس مفتوحة للزومبي. نحصّنها بسياج وأكياس رمل.', 'The camp yard is here... but open to zombies. We fortify it with a fence and sandbags.'), [tr('حصّنه (' + costStr(cost) + ')', 'Fortify (' + costStr(cost) + ')'), tr('بعدين', 'Later')]);
+  if (i !== 0) return; if (!afford(cost)) return toast(tr('ما عندك كفاية مواد.', 'Not enough materials.'));
+  pay(cost); G.fort[k] = 1; R.busy++; $('#fade').classList.add('on'); sfx('fix'); await wait(400); rebuildWorld(); $('#fade').classList.remove('on'); R.busy--;
+  toast(k === 'hosp' ? tr('تحصّن المستشفى ✓ هسه وزّع مسعفين وباحثين (K)، وخلّي نور تمسكه (احچي وياها). والجثث تتعالج هنا بالليل.', 'Hospital fortified ✓ Now assign medics and researchers (K), and put Noor in charge (talk to her). Bodies are treated here overnight.') : tr('تحصّن المعسكر ✓ كل ناجي جديد يتدرّب هنا أول يوم، والجنود يتمرّنون ويحرسون. خلّي الجندي حسن يستلمه.', 'Camp fortified ✓ Every new survivor trains here on day one, and soldiers drill and stand guard. Put Private Hassan in charge.'), 9000);
+  save(true);
+}
+
+// ---------------------------------------------------------------- spots
+const dropSpot = () => World.freeNear(129 * 16 + 8 + rand(-10, 10), 49 * 16 + 8 + rand(-6, 6));
+const STOVES = [[121.6, 46.5], [121.6, 48.5], [121.6, 50.5]];
+function stationPts(job) {
+  const b = WORKB[job] && WORKB[job](); if (!b) return [];
+  if (job === 'cook') return STOVES.map(([x, y]) => ({ x: x * 16, y: y * 16 }));
+  return [bPt(b, .3, .4), bPt(b, .7, .4), bPt(b, .5, .75)];
+}
+function campYard() { const c = op('camp') ? bOfK('camp') : mallB(); const y = c.door === 'S' ? c.dy + 3 : c.dy - 3; return { x: c.dx * 16 + 8, y: y * 16 + 8 }; }
+function farmPlots() { if (!R.farm) farmSpot(); const f = R.farm; return [[0, 0], [24, 0], [0, 24], [24, 24]].map(([dx, dy]) => ({ x: f.x + dx - 12, y: f.y + dy - 12 })); }
+function hospPts() { const h = bOfK('hosp'); return h ? { beds: [bPt(h, .15, .2), bPt(h, .15, .5), bPt(h, .15, .8), bPt(h, .45, .2), bPt(h, .45, .5), bPt(h, .45, .8)], bench: bPt(h, .8, .3) } : null; }
+function postSpot(k) {
+  if (k === 'hosp') { const h = hospPts(); if (h) return World.freeNear(h.bench.x - 14, h.bench.y + 12); }
+  if (k === 'camp') { const y = campYard(); return World.freeNear(y.x, y.y - 10); }
+  if (k === 'garage') return World.freeNear(S.mallBench.x, S.mallBench.y + 16);
+  if (k === 'gate') return World.freeNear(S.mallDoor.x + 20, S.mallDoor.y - 16);
+  if (k === 'radio') return World.freeNear(S.radio.x, S.radio.y + 16);
+  if (k === 'kitchen') return World.freeNear(STOVES[0][0] * 16 + 16, STOVES[0][1] * 16 + 8);
+  return mallSpot();
+}
+
+// ---------------------------------------------------------------- the visible world of work
+function lifeStations() {
+  const L2 = [];
+  for (const job in WORK) { if (!G.fac[WORK[job].fac]) continue; for (const p of stationPts(job)) L2.push({ k: WORK[job].st, x: p.x, y: p.y }); }
+  if (umaliMall() && !G.fac.food) L2.push({ k: 'stove', x: STOVES[0][0] * 16, y: STOVES[0][1] * 16 });
+  const h = hospPts(); if (h && op('hosp')) { for (const b of h.beds) L2.push({ k: 'bed', x: b.x, y: b.y }); L2.push({ k: 'bench', x: h.bench.x, y: h.bench.y }); }
+  if (G.col.pop || G.flags.mall) { const y = campYard(); for (let i = 0; i < 3; i++) L2.push({ k: 'dummy', x: y.x - 40 + i * 40, y: y.y + 34 }); }
+  if (G.col.jobs.farm || G.crops) { const st = Math.min(3, (G.crops || 0) >> 1); for (const p of farmPlots()) L2.push({ k: 'crop', x: p.x, y: p.y, n: G.col.jobs.farm ? Math.max(1, st) : st }); }
+  if (G.flags.mall) { let i = 0; for (const it of ['water', 'samoon', 'veg', 'fuel', 'bandage', 'ammo9']) { const n = G.stash[it] || 0; if (n) L2.push({ k: 'pile', it, n: Math.ceil(n / 2), x: (130.6 + (i % 3) * 1.1) * 16, y: (50.6 + ((i / 3) | 0) * 1.1) * 16 }); i++; } }
+  const sig = JSON.stringify(L2) + '|' + (G.col.hurt || 0) + op('hosp'); if (sig === R.stSig) return; R.stSig = sig; View3D.stations(L2);
+  const hp = hospPts(); R.patients = hp && op('hosp') ? hp.beds.slice(0, Math.min(6, G.col.hurt || 0)).map((b, i) => ({ id: 'pt' + i, x: b.x, y: b.y + 2, look: LOOK['sv' + ((i * 5 + 3) % 16)] })) : [];
+}
+function jobOfL(i) { const j = G.col.jobs; let k = 0; for (const name of JOBORD) { k += j[name] || 0; if (i < k) return name; } k += G.col.trainee || 0; if (i < k) return 'trainee'; return 'idle'; }
+function linkFor(e, p) {
+  const be = World.bAt(e.x >> 4, e.y >> 4), bp = World.bAt(p.x >> 4, p.y >> 4); if (be && be === bp) return null;
+  for (const k in LINKS) { if (!G.links[k]) continue; const l = LINKS[k], A = S[l.a], B = S[l.b]; if (!A || !B) continue;
+    for (const [X, Y] of [[A, B], [B, A]]) { const bx = World.bAt(X.x >> 4, X.y >> 4), by = World.bAt(Y.x >> 4, Y.y >> 4); if ((be && be === bx || hyp(e.x - X.x, e.y - X.y) < 200) && (bp && bp === by || hyp(p.x - Y.x, p.y - Y.y) < 200) && hyp(e.x - p.x, e.y - p.y) > 260) return { a: X, b: Y }; } }
+  return null;
+}
+function goTo(e, p) { const lk = linkFor(e, p), to = lk ? lk.a : p, path = findPath(e.x >> 4, e.y >> 4, to.x >> 4, to.y >> 4); e.path = path && path.length ? path : [to]; e.pi = 0; e.hop = lk; e.tgt = p; }
+function stepPath(e, dt) {
+  const w = e.path[e.pi], dx = w.x - e.x, dy = w.y - e.y, d = hyp(dx, dy), sp = (e.carry ? 40 : e.job === 'scav' ? 58 : 46) * dt;
+  if (d < 3) { e.pi++; if (e.pi < e.path.length) return false;
+    if (e.hop) { const h = e.hop; e.hop = null; for (let j = 0; j < 4; j++) R.fx.push({ k: 'puff', x: e.x, y: e.y - 6, t: .35, c: '#e8cf7a' }); e.x = h.b.x; e.y = h.b.y; const path = findPath(e.x >> 4, e.y >> 4, e.tgt.x >> 4, e.tgt.y >> 4); e.path = path && path.length ? path : [e.tgt]; e.pi = 0; return false; }
+    e.path = null; return true; }
+  e.x += dx / d * Math.min(sp, d); e.y += dy / d * Math.min(sp, d); e.fr += dt * 8; e.dir = dirOf(dx, dy); e.face = null; return false;
+}
+function facePt(e, p) { if (p) e.face = Math.atan2(p.x - e.x, p.y - e.y); }
+function deliver(e) {
+  const [it, n] = e.carry; G.stash[it] = (G.stash[it] || 0) + n; G.prod[it] = (G.prod[it] || 0) + n; e.carry = null; e.cit = null;
+  bubble(e, '+' + n + ' ' + L(ITEMS[it].n), 2.4); if (hyp(e.x - G.x, e.y - G.y) < 300) sfx('pick');
+}
+function resNote(b, a) {
+  for (const [th, ar, en] of [[8, 'الباحثين: "عرفنا شي.. الزومبي يهدأ من يشمّ چاي".', 'Researchers: "We learned something... zombies calm down at the smell of tea."'], [20, 'الباحثين جرّبوا لقاح رقم ٧ على زومبي.. كام يرقص. مو هذا المطلوب.', 'The researchers tried vaccine #7 on a zombie... it started dancing. Not the goal.'], [40, 'اللقاح التجريبي اشتغل على واحد! رجع يحچي.. وأول شي سأل عن راتبه.', 'The trial vaccine worked on one! He can talk again... first thing he asked about was his salary.'], [70, 'نور: "اللقاح صار ثابت. نحتاج ناس أكثر حتى نوصّله لكل بغداد."', 'Noor: "The vaccine is stable now. We need more people to take it across Baghdad."']])
+    if (b < th && a >= th) { toast(tr(ar, en), 8000); if (th === 40) G.flags.vaccine = 1; }
+}
+const SCAVLOOT = [['water', 1, .2], ['veg', 2, .18], ['scrap', 2, .22], ['parts', 1, .1], ['can', 1, .1], ['ammo9', 3, .08], ['fuel', 1, .06], ['bandage', 1, .06]];
+function scavLoot() { let r = Math.random(); for (const [it, n, p] of SCAVLOOT) { if (r < p) return [it, n]; r -= p; } return ['scrap', 1]; }
+function scavTarget() {
+  const zs = [0, 2]; if (G.flags.g1) zs.push(1); if (G.flags.g3) zs.push(3);
+  for (let t = 0; t < 14; t++) { const c = World.containers[(Math.random() * World.containers.length) | 0]; if (!c || c.fixed || !zs.includes(c.zone)) continue; if (hyp(c.x - S.mallDoor.x, c.y - S.mallDoor.y) > 760) continue; return World.freeNear(c.x, c.y + 14); }
+  const p = World.randOutdoor(2); return p || S.mallDoor;
+}
+const POSTL = {
+  hosp: [['اكعد هنا.. خلّيني أشوف الجرح.', 'نحتاج لفّافات أكثر. والصبر.', 'العينة رقم ١٣.. أحسن من ١٢.'], ['Sit here... let me see the wound.', 'We need more bandages. And patience.', 'Sample #13... better than #12.']],
+  camp: [['واحد! اثنين! ارفع رجلك!', 'هذا مو مسدس ماي، شدّ عليه زين!', 'الجندي الزين ياكل صمون عسكري ويسكت.'], ['One! Two! Lift those knees!', "That's not a water pistol, grip it properly!", 'A good soldier eats army bread and keeps quiet.']],
+  garage: [['هاي السيارة تحتاج دعاء أكثر من قطع غيار.', 'دررر.. اشتغلت!', 'منو خلّى الكيا بلا دهن؟!'], ['This car needs prayers more than parts.', 'Brrr... it runs!', 'Who left the Kia without oil?!']],
+  gate: [['استكان چاي للحرس.. بلا چاي ماكو حراسة.', 'الزحمة برّه.. نفس الباب الشرقي.'], ['Tea for the guards... no tea, no guarding.', 'Traffic outside... same as Bab Al-Sharqi.']],
+  radio: [['هنا إذاعة المول! لايك واشتراك وتعالوا!', 'كششش.. سيف معاكم من قلب الحدث!'], ['This is Mall Radio! Like, subscribe and come over!', 'Kshhh... Saif live from the scene!']],
+  kitchen: [['يمّه تعالوا تريّكوا.', 'الدولمة تحتاج وكت.. والصبر من الإيمان.', 'منو أخذ الطاوة؟!'], ['Come have breakfast, dears.', 'Dolma takes time... patience is faith.', 'Who took the frying pan?!']]
+};
+function finishWork(e) {
+  const j = e.job, c = G.col;
+  if (WORK[j]) { const lv = G.fac[WORK[j].fac], it = j === 'pharm' && lv >= 2 && Math.random() < .4 ? 'medkit' : WORK[j].out; e.carry = [it, it === 'medkit' ? 1 : WORK[j].n(lv)]; if (Math.random() < .3) bubble(e, pick(L(WORK[j].l)), 2.4); return; }
+  if (j === 'scav') { e.carry = scavLoot(); bubble(e, tr('لكيت شي! راجع للمول.', 'Found something! Heading back.'), 2.2); return; }
+  if (j === 'farm') { G.crops = (G.crops || 0) + 1; if (G.crops >= 7) { G.crops = 0; e.carry = ['veg', 3]; bubble(e, tr('الحصاد! طماطة وخيار.', 'Harvest! Tomatoes and cucumbers.'), 2.4); } else bubble(e, pick(L([['سقيت الزرع.', 'الطماطة دتحمر.'], ['Watered the crops.', 'The tomatoes are reddening.']])), 2); return; }
+  if (j === 'doc') { const b = c.research; c.research += atPost('noor', 'hosp') ? .9 : .5; resNote(b, c.research); bubble(e, tr('+ بحث اللقاح', '+ vaccine research'), 2); return; }
+  if (j === 'medic' || e.poster === 'hosp') { if (c.hurt > 0) { c.hurt--; bubble(e, tr('واحد طاب ✓ رجع لشغله.', 'One recovered ✓ back to work.'), 2.4); R.stSig = ''; } else { if (e.poster === 'hosp') { const b = c.research; c.research += .4; resNote(b, c.research); } if (Math.random() < .4) bubble(e, pick(L(e.poster ? POSTL.hosp : [['ماكو جرحى.. الحمد لله.', 'نعقّم الأسرّة.'], ['No wounded... thank God.', 'Sterilising the beds.']])), 2.4); } return; }
+  if (e.poster === 'kitchen') { e.carry = ['samoon', G.fac.food ? 3 : 2]; if (Math.random() < .5) bubble(e, pick(L(POSTL.kitchen)), 2.6); return; }
+  if (e.poster === 'gate') { e.carry = Math.random() < .5 ? ['tea', 1] : null; if (!e.carry || Math.random() < .5) bubble(e, pick(L(POSTL.gate)), 2.4); return; }
+  if (e.poster === 'garage') { const v = G.veh.filter(v => !v.gone && v.hp < VEH[v.t].hp).sort((a, b) => a.hp - b.hp)[0]; if (v) { v.hp = Math.min(VEH[v.t].hp, v.hp + 20); bubble(e, tr('صلّحت ' + L(VEH[v.t].n) + ' شوية.', 'Patched up the ' + L(VEH[v.t].n) + '.'), 2.4); } else { e.carry = Math.random() < .35 ? ['parts', 1] : null; bubble(e, pick(L(POSTL.garage)), 2.4); } return; }
+  if (e.poster) { if (Math.random() < .5) bubble(e, pick(L(POSTL[e.poster] || POSTL.gate)), 2.6); return; }
+  if ((j === 'trainee' || j === 'soldier') && Math.random() < .35) bubble(e, pick(L([['واحد! اثنين!', 'يمين.. يسار.. لا يسارك الثاني!', 'متى الغدا؟'], ['One! Two!', 'Right... left... no, your OTHER left!', 'When is lunch?']])), 2);
+  if (j === 'idle' && Math.random() < .5) bubble(e, pick(L(JOBL.idle)), 2.4);
+}
+function planWork(e, night) {
+  const j = e.job;
+  if (e.carry) { e.st = 'deliver'; return goTo(e, dropSpot()); }
+  if (e.poster) { e.st = 'work'; e.cyc = e.poster === 'kitchen' ? 34 : e.poster === 'camp' ? 7 : rand(14, 22); e.ws = e.poster === 'kitchen' ? { x: STOVES[0][0] * 16, y: STOVES[0][1] * 16 } : e.poster === 'hosp' ? (hospPts() || {}).bench : e.poster === 'camp' ? campYard() : null; return goTo(e, postSpot(e.poster)); }
+  if (night && j !== 'guard' && j !== 'soldier') { e.st = 'rest'; e.cyc = 20; e.ws = null; return goTo(e, mallSpot()); }
+  if (WORK[j]) { const pts = stationPts(j); if (!pts.length || !G.fac[WORK[j].fac]) { e.st = 'idle'; e.cyc = 6; return goTo(e, mallSpot()); } const p = pts[e.idx % pts.length]; e.ws = p; e.st = 'work'; e.cyc = WORK[j].cyc * rand(.85, 1.15); return goTo(e, World.freeNear(p.x + 14, p.y + 10)); }
+  if (j === 'scav') { e.st = 'work'; e.cyc = rand(4, 6); e.ws = null; return goTo(e, scavTarget()); }
+  if (j === 'farm') { const p = farmPlots()[e.idx % 4]; e.ws = p; e.st = 'work'; e.cyc = rand(12, 16); return goTo(e, World.freeNear(p.x + 14, p.y)); }
+  if (j === 'doc' || j === 'medic') { const h = op('hosp') && hospPts(); if (!h) { e.st = 'idle'; e.cyc = 6; return goTo(e, mallSpot()); } const p = j === 'doc' ? h.bench : h.beds[e.idx % 6]; e.ws = p; e.st = 'work'; e.cyc = j === 'doc' ? rand(20, 26) : rand(16, 22); return goTo(e, World.freeNear(p.x + 14, p.y + 4)); }
+  if (j === 'guard') { const sites = [mallB()]; if (op('hosp')) sites.push(bOfK('hosp')); if (op('camp')) sites.push(bOfK('camp')); e.st = 'guard'; e.cyc = rand(8, 12); e.ws = null; return goTo(e, doorOut(sites[e.idx % sites.length], 5)); }
+  if (j === 'soldier' || j === 'trainee') { const y = campYard(); e.st = 'drill'; e.cyc = rand(3, 6); e.ws = { x: y.x - 40 + (e.idx % 3) * 40, y: y.y + 34 }; return goTo(e, World.freeNear(y.x + rand(-50, 50), y.y + rand(-16, 10))); }
+  e.st = 'idle'; e.cyc = rand(5, 9); e.ws = null; return goTo(e, World.freeNear(S.board.x + rand(-40, 40), S.board.y + rand(10, 40)));
+}
+function arriveWork(e) {
+  if (e.st === 'deliver') { deliver(e); e.wt = .8; e.st = 'next'; return; }
+  e.wt = e.cyc || 4; facePt(e, e.ws);
+}
+function fightTick(e, dt) {
+  const j = e.job, sol = j === 'soldier' || e.poster === 'camp', gd = j === 'guard' || e.poster === 'gate';
+  if ((!sol && !gd) || e.hidden) return; e.gun = sol ? 'rifle' : 'pipe';
+  if ((e.cd = (e.cd || rand(0, .6)) - dt) > 0) return; e.cd = sol ? 1 : .8;
+  const rng = sol ? 170 : 70; let t = null, bd = rng; for (const z of R.zombies) { const d = Math.abs(z.x - e.x) + Math.abs(z.y - e.y); if (d < bd * 1.4) { const dd = hyp(z.x - e.x, z.y - e.y); if (dd < bd) { bd = dd; t = z; } } }
+  if (!t) { if (sol && e.st === 'drill' && e.wt > 0 && e.ws && Math.random() < .35) { R.fx.push({ k: 'line', x: e.x, y: e.y - 9, x2: e.ws.x, y2: e.ws.y - 12, t: .06 }); if (hyp(e.x - G.x, e.y - G.y) < 260) sfx('shot'); facePt(e, e.ws); } return; }
+  const a = Math.atan2(t.y - e.y, t.x - e.x); e.face = Math.PI / 2 - a;
+  const hz = (dmg, kb) => { if (hyp(t.x - G.x, t.y - G.y) < 360) return hitZ(t, dmg, a, kb); t.hp -= dmg; t.alert = 6; if (t.hp <= 0) { const i = R.zombies.indexOf(t); if (i >= 0) R.zombies.splice(i, 1); if (R.raid && t.raid) R.raid.killed++; if (op('hosp') && t.type !== 'giant' && R.bodies.length < 30) R.bodies.push({ x: t.x, y: t.y, look: t.look, t: 150 }); } };
+  if (sol) { R.fx.push({ k: 'line', x: e.x, y: e.y - 9, x2: t.x, y2: t.y - 9, t: .07 }); if (hyp(e.x - G.x, e.y - G.y) < 420) sfx('shot'); hz(G.col.noAmmo ? 9 : (atPost('sol', 'camp') ? 24 : 18), 40); }
+  else if (bd < 26) hz(11, 90);
+}
+function updWorkers(dt) {
+  let budget = 3; const night = isNight(), raid = !!R.raid;
+  for (const e of R.npcs) {
+    if (!e.worker && !e.poster) continue;
+    const job = e.poster ? 'post' : jobOfL(e.idx);
+    if (job !== e.job) { e.job = job; e.path = null; e.wt = 0; e.st = 'next'; e.carry = null; }
+    e.hidden = raid && (job === 'guard' || job === 'soldier'); e.work = 0; e.gun = null;
+    fightTick(e, dt);
+    if (e.wt > 0) { e.wt -= dt; if (e.st === 'work' || e.st === 'drill') { e.work = 1; facePt(e, e.ws); } if (e.wt <= 0) { if (e.st === 'work' || e.st === 'drill' || e.st === 'guard' || e.st === 'idle') finishWork(e); e.st = 'next'; } continue; }
+    if (e.path) { if (stepPath(e, dt)) arriveWork(e); continue; }
+    if (budget-- <= 0) continue; planWork(e, night);
+  }
+}
+
+// ---------------------------------------------------------------- endless zombies, giants, daytime attacks
+function spawnGiant(x, y, tag) {
+  if (x == null) { for (let t = 0; t < 16; t++) { const a = rand(0, 6.28), r = rand(420, 600), px = G.x + Math.cos(a) * r, py = G.y + Math.sin(a) * r; if (px < 32 || py < 32 || px > World.W * 16 - 32 || py > World.H * 16 - 32 || solidAt(px, py, 1) || World.bAt(px >> 4, py >> 4)) continue; x = px; y = py; break; } if (x == null) return null; }
+  const z = mkZ('giant', x, y); z.look = zlook('giant', 0); if (tag) Object.assign(z, tag); if (z.big) { z.hp = 650; z.s = Object.assign({}, z.s, { hp: 650 }); } R.zombies.push(z); return z;
+}
+function lifeZombies(dt) {
+  if ((R.zt = (R.zt || 0) - dt) > 0) return; R.zt = 2.2;
+  let near = 0; for (const z of R.zombies) if (!z.raid && Math.abs(z.x - G.x) < 700 && Math.abs(z.y - G.y) < 700) near++;
+  const zn = World.zoneOf(G.x >> 4), target = Math.round(((secured(zn) ? 5 : 13) + Math.min(G.day, 30) * .45) * (isNight() ? 1.35 : 1));
+  if (near < target && R.zombies.length < 280) for (let k = 0; k < 2; k++) for (let t = 0; t < 10; t++) { const a = rand(0, 6.28), r = rand(430, 660), x = G.x + Math.cos(a) * r, y = G.y + Math.sin(a) * r, tx = x >> 4, ty = y >> 4; if (tx < 2 || ty < 2 || tx >= World.W - 2 || ty >= World.H - 2 || solidAt(x, y, 1) || World.bAt(tx, ty)) continue; const z = mkZ(ztype(World.zoneOf(tx)), x, y); if (Math.random() < .3) z.alert = 4; R.zombies.push(z); break; }
+  if (R.zombies.length > 250) { const i = R.zombies.findIndex(z => !z.raid && !z.guard && !z.nest && !z.mis && !z.big && ['normal', 'vendor', 'fat', 'cop', 'gen'].includes(z.type) && hyp(z.x - G.x, z.y - G.y) > 1400); if (i >= 0) R.zombies.splice(i, 1); }
+  const h = G.time % 24, slot = G.day * 2 + (h >= 12 ? 1 : 0);
+  if (G.day >= 3 && G.giantS !== slot && ((h >= 12 && h < 13) || (h >= 0 && h < 1) || h >= 23.5)) { G.giantS = slot; if (Math.random() < .45 && spawnGiant()) { R.shake = .6; sfx('crash'); toast(tr('الأرض تهتز.. زومبي ضخم بالمنطقة! يحتاج سلاح ناري أو جماعة.', 'The ground shakes... a giant zombie nearby! You need a gun or a crew.'), 6500); } }
+  if (G.flags.mall && G.col.pop > 0 && G.day >= 3 && G.dayRaid !== G.day && h >= 14 && h < 15 && !R.raid) { G.dayRaid = G.day; if (Math.random() < .55) { const rd = G.raidDay; startRaid(.5, true); G.raidDay = rd; } }
+}
+
+// ---------------------------------------------------------------- missions: the story never stops
+const MIS_T = {
+  nest: m => [tr('نظّف عش الزومبي بـ ' + L(ZONES[m.zn]) + ' — اكو ناجين مختبين جوّه', 'Clear the zombie nest in ' + L(ZONES[m.zn]) + ' — survivors are hiding inside'), m],
+  giant: m => [tr('الجمّاعين شافوا زومبي ضخم بـ ' + L(ZONES[m.zn]) + '.. طيّحه', 'Scavengers spotted a giant zombie in ' + L(ZONES[m.zn]) + '... take it down'), R.zombies.find(z => z.mis) || m],
+  supply: m => [tr('وصّل ' + L(ITEMS[m.it].n) + ' ×' + m.n + ' لـ' + (m.to === 'hosp' ? 'لمستشفى' : 'لمعسكر') + ' (عندك ' + (G.inv[m.it] || 0) + ')', 'Deliver ' + L(ITEMS[m.it].n) + ' ×' + m.n + ' to the ' + (m.to === 'hosp' ? 'hospital' : 'camp') + ' (you have ' + (G.inv[m.it] || 0) + ')'), (() => { const b = bOfK(m.to); return b ? { x: b.dx * 16 + 8, y: (b.door === 'S' ? b.dy + 1 : b.dy - 1) * 16 + 8 } : S.mallDoor; })()],
+  rescue: m => [tr('انقذ الناجي المحاصر (النقطة الخضرة)', 'Rescue the trapped survivor (green dot)'), G.strand.find(s => s.k === m.k) || null]
+};
+function newMission(notes) {
+  const zs = [0, 2]; if (G.flags.g1) zs.push(1); if (G.flags.g3) zs.push(3); if (G.flags.g4) zs.push(4);
+  const types = ['nest', 'giant', 'rescue']; if (op('hosp') || op('camp')) types.push('supply');
+  const t = pick(types), zn = pick(zs);
+  if (t === 'nest') { const bs = World.buildings.filter(b => b.type === 'house' && World.zoneOf(b.x) === zn && hyp(b.dx * 16 - S.mallDoor.x, b.dy * 16 - S.mallDoor.y) > 300); const b = pick(bs); if (!b) return; const p = doorOut(b, 4); G.mis = { t, zn, x: p.x, y: p.y, n: Math.min(16, 7 + (G.day >> 1)), g: G.day % 3 === 0 }; notes.push(tr('مهمة اليوم: عش زومبي بـ ' + L(ZONES[zn]) + '. نسمع صوت ناس محصورين جوّه البيت.', "Today's mission: a zombie nest in " + L(ZONES[zn]) + '. We hear people trapped inside the house.')); }
+  else if (t === 'giant') { const p = World.randOutdoor(zn); if (!p) return; G.mis = { t, zn, x: p.x, y: p.y }; notes.push(tr('مهمة اليوم: زومبي ضخم يخرّب بـ ' + L(ZONES[zn]) + '. الجمّاعين ما يكدرون يطلعون.', "Today's mission: a giant zombie wrecking " + L(ZONES[zn]) + '. The scavengers cannot go out.')); }
+  else if (t === 'supply') { const to = op('hosp') && (!op('camp') || Math.random() < .5) ? 'hosp' : 'camp', [it, n] = to === 'hosp' ? pick([['bandage', 3], ['medkit', 1], ['water', 4]]) : pick([['ammo9', 10], ['samoon', 4], ['fuel', 1]]); G.mis = { t, to, it, n }; notes.push(to === 'hosp' ? tr('مهمة اليوم: المستشفى يحتاج ' + L(ITEMS[it].n) + ' ×' + n + '.', "Today's mission: the hospital needs " + L(ITEMS[it].n) + ' ×' + n + '.') : tr('مهمة اليوم: المعسكر يحتاج ' + L(ITEMS[it].n) + ' ×' + n + '.', "Today's mission: the camp needs " + L(ITEMS[it].n) + ' ×' + n + '.')); }
+  else { const p = World.randOutdoor(zn); if (!p || G.strand.length >= 3) return; const k = [0, 1, 2, 3].find(x => !G.strand.some(s => s.k === x)); G.strand.push({ k, x: p.x, y: p.y }); G.mis = { t, k, zn }; notes.push(tr('مهمة اليوم: واحد يصيح من ' + L(ZONES[zn]) + '. محاصر بين الزومبي.', "Today's mission: someone screaming from " + L(ZONES[zn]) + '. Trapped among zombies.')); }
+}
+function misDone(txt, rw) {
+  G.mis = null; G.misN = (G.misN || 0) + 1; for (const k in rw) add(k, rw[k]); sfx('fix'); save(true);
+  toast(tr('✓ المهمة خلصت! ', '✓ Mission complete! ') + txt + '  ' + Object.keys(rw).map(k => '+' + L(ITEMS[k].n) + ' ×' + rw[k]).join(tr('، ', ', ')), 8000);
+}
+function misTick() {
+  const m = G.mis; if (!m) return;
+  if (m.t === 'nest' && m.live && !R.zombies.some(z => z.nest)) { const n = Math.min(2, Math.max(0, colCap() - G.col.pop)); G.col.pop += n; G.col.trainee = (G.col.trainee || 0) + n; syncNpcs(); misDone(n ? tr('طلعوا ' + n + ' ناجين من البيت وراحوا للمول يتدرّبون.', n + ' survivors came out and went to the mall to train.') : tr('البيت صار آمن.', 'The house is safe.'), { scrap: 6, parts: 2 }); }
+  else if (m.t === 'giant' && m.live && !R.zombies.some(z => z.mis)) misDone(tr('الضخم وكع. الجمّاعين رجعوا يطلعون.', 'The giant is down. The scavengers can go out again.'), { parts: 3, ammo9: 6 });
+  else if (m.t === 'rescue' && !G.strand.some(s => s.k === m.k)) misDone(tr('الناجي وصل.', 'The survivor made it.'), { scrap: 4 });
+}
+function misSpawn() {
+  const m = G.mis; if (!m) return;
+  if (m.t === 'nest') { m.live = 1; for (let i = 0; i < m.n; i++) { const a = rand(0, 6.28), r = rand(10, 70), z = mkZ(ztype(m.zn), m.x + Math.cos(a) * r, m.y + Math.sin(a) * r * .7); z.nest = 1; if (!solidAt(z.x, z.y, 1)) R.zombies.push(z); } if (m.g) { const z = spawnGiant(m.x + 30, m.y + 20, { nest: 1 }); if (!z) m.g = 0; } }
+  if (m.t === 'giant') { m.live = 1; spawnGiant(m.x, m.y, { mis: 1 }); }
+}
+function supplyAct(k) {
+  const m = G.mis; if (!m || m.t !== 'supply' || m.to !== k) return false;
+  if (!has(m.it, m.n)) { toast(tr('يحتاجون ' + L(ITEMS[m.it].n) + ' ×' + m.n + ' — عندك ' + (G.inv[m.it] || 0) + '.', 'They need ' + L(ITEMS[m.it].n) + ' ×' + m.n + ' — you have ' + (G.inv[m.it] || 0) + '.')); return false; }
+  take(m.it, m.n); const n = G.col.pop < colCap() ? 1 : 0; G.col.pop += n; G.col.trainee = (G.col.trainee || 0) + n; syncNpcs();
+  misDone(n ? tr('واحد من الجرحى القدماء تطوّع وانضم للتدريب.', 'One of the old patients volunteered and joined training.') : tr('شكروك من كل كلبهم.', 'They thanked you from the heart.'), { scrap: 3 });
+  return true;
+}
+
+// ---------------------------------------------------------------- side story: Um Ali & Ali, Saif's comeback
+function lifeSide() {
+  const f = G.flags; let s = null;
+  if (f.aliQ === 1 && f.g3) { const z = R.zombies.find(z => z.type === 'ali'); s = Object.assign({ label: tr('أم علي: دوّر علي', 'Um Ali: find Ali') }, z ? { x: z.x, y: z.y } : S.book); }
+  else if (f.aliQ === 2) { const b = bOfK('hosp'); s = { label: tr('وصّل علي للمستشفى', 'Take Ali to the hospital'), x: b.dx * 16 + 8, y: (b.door === 'S' ? b.dy + 1 : b.dy - 1) * 16 + 8 }; }
+  else if (G.mis && !f.ended) { const o = MIS_T[G.mis.t](G.mis); if (o[1]) s = { label: tr('مهمة', 'Mission'), x: o[1].x, y: o[1].y }; }
+  R.side = s;
+}
+async function umaliTalk() {
+  const f = G.flags;
+  if (f.mall && f.umali && !f.umaliMoved) { f.umaliMoved = 1; syncNpcs(); return say('umali', tr('يمّه سمعت إنتو بالمول وعدكم ناس هواي.. منو يطبخلهم؟ لا لا، اني أجي. المطبخ مالتي من اليوم.', 'Dear, I heard you are at the mall with lots of people... who cooks for them? No no, I am coming. The kitchen is mine from today.')); }
+  if (f.umali && !f.aliQ && G.day >= 5) {
+    f.aliQ = 1;
+    await say('umali', tr('يمّه.. أريد أطلب منك شي. علي ابني راح للمتنبي يوم الجمعة يشتري كتب. يحب الكتب.. مو مثلك.', 'Dear... I want to ask you something. My son Ali went to Mutanabbi on Friday to buy books. He loves books... not like you.'));
+    await say('umali', tr('من يومها ما رجع. إذا شفته تعرفه: فانيلة المنتخب الخضرة ونظارات.', 'He never came back. You will know him: green national team jersey and glasses.'));
+    await say('umali', tr('وإذا صاير زومبي.. لا تضربه هواي. بس شوية، حتى يكعد. ووصّله لنور.. هي تعرف شتسوي.', "And if he turned... don't hit him much. Just a little, so he sits down. And bring him to Noor... she knows what to do."));
+    toast(f.g3 ? tr('مهمة جانبية: دوّر على علي بشارع المتنبي (السهم الوردي).', 'Side quest: find Ali on Mutanabbi Street (pink arrow).') : tr('مهمة جانبية: علي بالمتنبي.. بس الطريق للمتنبي بعده مسدود.', 'Side quest: Ali is in Mutanabbi... but the road there is still closed.'), 7000);
+    if (f.g3) spawnAli(); save(true); return;
+  }
+  if (f.aliQ === 4) return say('umali', pick(L([['علي رجع يقرا. الحمد لله.. بس بعده ياكل مثل الزومبي.', 'يمّه الله يخليك. لولاك جان علي بعده يدور بالشارع.'], ['Ali is reading again. Thank God... he still eats like a zombie though.', 'God keep you, dear. Without you Ali would still be roaming the street.']])));
+  if (f.umaliMoved) return say('umali', pick(L([['أكلت؟ وجهك أصفر.', 'الصمون حار.. خذ وحدة وروح.', 'لا تخلّي الشباب ينامون بلا عشا.'], ['Have you eaten? You look pale.', 'The bread is hot... take one and go.', "Don't let the boys sleep without dinner."]])));
+  return say('umali', tr('أكلت؟ وجهك أصفر. اكعد أسويلك شي.', "Have you eaten? You look pale. Sit, I'll make you something."));
+}
+function spawnAli() { if (R.zombies.some(z => z.type === 'ali')) return; const p = World.freeNear(S.book.x + 70, S.book.y + 40), z = mkZ('ali', p.x, p.y); z.look = zlook('ali', 0); R.zombies.push(z); }
+function lifeDay(notes) {
+  const c = G.col, f = G.flags;
+  if (f.umali && f.mall && !f.umaliMoved) { f.umaliMoved = 1; notes.push(tr('أم علي سمعت إن بالمول ناس هواي.. لمّت طاواتها وجت. كالت: "منو يطبخلهم؟ إنتو؟ لا يمّه." المطبخ صار مالتها.', 'Um Ali heard there are many people at the mall... packed her pans and came. She said: "Who cooks for them? You? No, dear." The kitchen is hers now.')); }
+  if (c.trainee) { const n = c.trainee; c.trainee = 0; const got = autoAssign(n); notes.push(tr(n + ' تخرّجوا من التدريب' + (op('camp') ? ' بالمعسكر' : ' كدام المول') + (atPost('sol', 'camp') ? ' (الجندي حسن دربهم بقسوة.. وبحب)' : '') + ' وتوزّعوا: ' + got + '.', n + ' graduated from training and were assigned: ' + got + '.')); }
+  const pr = Object.keys(G.prod || {}).filter(k => G.prod[k] > 0); if (pr.length) notes.push(tr('شغل الناس أمس: ', "People's work yesterday: ") + pr.map(k => L(ITEMS[k].n) + ' ×' + G.prod[k]).join(tr('، ', ', ')) + tr(' — كلها بالمخزن.', ' — all in storage.')); G.prod = {};
+  for (const k in WORK) { const fac = WORK[k].fac; if (G.fac[fac] && !c.jobs[k]) notes.push(tr(L(FAC[fac].n) + ' واكف.. ماكو عمال. وزّع ناس من المستعمرة (K).', L(FAC[fac].n) + ' is idle... no workers. Assign people in the colony (K).')); }
+  if (op('hosp') && c.hurt && !c.jobs.medic && !atPost('noor', 'hosp')) notes.push(tr(c.hurt + ' جرحى ينتظرون بالمستشفى.. ماكو مسعف.', c.hurt + ' wounded waiting at the hospital... no medic.'));
+  if (f.aliQ === 3) { if (op('hosp')) { f.aliQ = 4; if (c.pop < colCap()) { c.pop++; c.jobs.doc++; } notes.push(tr('نور سهرت على علي طول الليل. الصبح فتح عيونه ودوّر على نظاراته.', 'Noor stayed up all night with Ali. In the morning he opened his eyes and looked for his glasses.')); R.aliScene = 1; } }
+  const sf = comp('saif'); if (sf.st === 'left' && !f.saifBack && f.mall && G.day - sf.joinDay >= 5) { f.saifBack = 1; sf.st = 'post'; sf.post = 'radio'; sf.trust = 55; const n = Math.min(2, Math.max(0, colCap() - c.pop)); c.pop += n; c.trainee = (c.trainee || 0) + n; notes.push(tr('رجع سيف! ووياه ' + n + ' من متابعينه. يكول: "كلتلكم المول أحسن لوكيشن". هسه يمسك إذاعة المول.', 'Saif is back! With ' + n + ' of his followers. He says: "I told you the mall is the best location." He runs the mall radio now.')); }
+  if (atPost('saif', 'radio') && c.pop < colCap() && Math.random() < .5) { c.pop++; c.trainee = (c.trainee || 0) + 1; notes.push(tr('واحد وصل على صوت إذاعة سيف.. كال "جيت أطلع بالبث".', 'Someone arrived following Saif\'s radio... said "I came to be on the stream."')); }
+  if (G.mis && (G.mis.t === 'nest' || G.mis.t === 'giant')) G.mis.live = 0;
+  if (!G.mis && (f.radio || f.ended)) newMission(notes);
+  if (G.day % 10 === 0) notes.unshift(tr('— الدفتر رقم ' + (G.day / 10 + 1) + '. الأول خلص ورق. —', '— Notebook #' + (G.day / 10 + 1) + '. The last one ran out of pages. —'));
+}
+function autoAssign(n) {
+  const j = G.col.jobs, got = {}, give = k => { j[k] = (j[k] || 0) + 1; got[k] = (got[k] || 0) + 1; };
+  for (let i = 0; i < n; i++) {
+    let k = null;
+    for (const w in WORK) { const lv = G.fac[WORK[w].fac]; if (lv && (j[w] || 0) < lv * 2) { k = w; break; } }
+    if (!k && op('hosp') && j.medic < 2) k = 'medic'; if (!k && op('hosp') && j.doc < 2) k = 'doc';
+    if (!k && j.guard < 2) k = 'guard'; if (!k && op('camp') && j.soldier < 3) k = 'soldier'; if (!k && j.farm < 2) k = 'farm';
+    give(k || 'scav');
+  }
+  return Object.keys(got).map(k => L(JOBT[k] || JOBX[k]) + ' ×' + got[k]).join(tr('، ', ', '));
+}
+async function aliScene() {
+  R.aliScene = 0;
+  await say(tr('علي', 'Ali'), tr('يمّه..؟ شنو الغدا؟ وليش الكل يباوعون عليّه هيج؟', "Mom...? What's for lunch? And why is everyone staring at me?"));
+  await say('umali', tr('علي! يمّه! ... دولمة يمّه. دولمة.', 'Ali! My son! ... Dolma, dear. Dolma.'));
+  await say('noor', tr('هذا أول واحد يرجع كامل. حتى نظاراته يتذكرها. أم علي.. إنتِ السبب، صبرتِ عليه.', 'He is the first one back completely. He even remembers his glasses. Um Ali... it was you, you waited for him.'));
+  await say(tr('علي', 'Ali'), tr('أشتغل ويه نور بالبحث. الكتب علّمتني شي.. بس الزومبي علّمني أكثر.', 'I will work with Noor on the research. Books taught me something... being a zombie taught me more.'));
+  add('dolma', 2); toast(tr('علي انضم للمستعمرة كباحث. وأم علي طبخت دولمة للكل (دولمة ×٢).', 'Ali joined the colony as a researcher. Um Ali cooked dolma for everyone (dolma ×2).'), 7000); save(true);
+}
+
+// ---------------------------------------------------------------- chapter two objectives
+function ch2Obj() {
+  const f = G.flags;
+  if (!op('hosp')) { const b = bOfK('hosp'); return [tr('الدفتر الثاني: حصّن المستشفى المهجور خلف المول', 'Notebook two: fortify the abandoned hospital behind the mall'), b ? { x: b.dx * 16 + 8, y: (b.door === 'S' ? b.dy + 1 : b.dy - 1) * 16 + 8 } : null]; }
+  if (comp('noor').st !== 'left' && comp('noor').st !== 'none' && !atPost('noor', 'hosp')) { const n = R.npcs.find(e => e.id === 'noor'); return [tr('خلّي نور تمسك المستشفى (احچي وياها)', 'Put Noor in charge of the hospital (talk to her)'), n || null]; }
+  if (!f.bigBoss) { const z = R.zombies.find(z => z.big); return [tr('«أبو كرش» — أضخم زومبي ببغداد — واكف يم الجسر. لازم يوكع', '«Abu Karsh» — the biggest zombie in Baghdad — stands by the bridge. He must fall'), z || S.g4]; }
+  if (G.mis) return MIS_T[G.mis.t](G.mis);
+  if (!f.vaccine) return [tr('ساعد نور: وزّع باحثين بالمستشفى حتى يكمل اللقاح (' + Math.min(100, Math.round(G.col.research / 40 * 100)) + '%)', 'Help Noor: assign researchers at the hospital to finish the vaccine (' + Math.min(100, Math.round(G.col.research / 40 * 100)) + '%)'), null];
+  return [tr('كبّر المستعمرة: بث بالراديو، صلّح المعامل، وابني الممرات', 'Grow the colony: broadcast on the radio, repair the plants, build the tunnels'), S.radio];
+}
+const CH2 = [['سدّيت الدفتر الأول.', 'بس الزومبي ما قروا الدفتر.. بعدهم بالشوارع، وكل يوم يجون أكثر.', 'نور تكول: الچاي يهدّيهم، بس ما يرجّعهم. نحتاج مستشفى محصّن ولقاح حقيقي.', 'وأبو جاسم يكول: نحتاج بانزين. أبو جاسم دائماً يحتاج بانزين.', 'فتحت دفتر جديد. كتبت بأول صفحة: "اليوم الأول.. مرة ثانية."'], ['I closed the first notebook.', 'But the zombies never read it... they are still in the streets, more every day.', 'Noor says: tea calms them, it does not bring them back. We need a fortified hospital and a real vaccine.', 'And Abu Jasim says: we need fuel. Abu Jasim always needs fuel.', 'I opened a new notebook. On the first page I wrote: "Day one... again."']];
+
+// ---------------------------------------------------------------- per-frame
+function lifeTick(dt) {
+  lifeZombies(dt);
+  if ((R.lt = (R.lt || 0) - dt) <= 0) { R.lt = 1; misTick(); lifeSide(); lifeStations(); }
+  if (R.aliScene && R.busy === 0 && !R.nexting) aliScene();
+}
+
+Object.assign(JOBS, JOBX);
 View3D.init($('#gl')); resize(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); renderMenu(); requestAnimationFrame(loop);
 setTimeout(() => checkUpdate(false), 1500);
 window.__izFast = () => setInterval(() => { try { update(1 / 60); } catch (e) { console.error(e); } }, 16);
-window.__iz = { update, updComps, findNear, hud, LOOK, zlook, syncNpcs, updWorkers, jobOf, findPath, startRaid, endRaid, convert, hospMenu, strandDay, stairsMenu, stashPanel, applyFloor, colCap, baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
+window.__iz = { lifeTick, lifeDay, spawnGiant, fortify, rebuildWorld, newMission, jobOfL, autoAssign, op, startRaid, update, updComps, findNear, hud, LOOK, zlook, syncNpcs, updWorkers, jobOf, findPath, startRaid, endRaid, convert, hospMenu, strandDay, stairsMenu, stashPanel, applyFloor, colCap, baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };
 })();

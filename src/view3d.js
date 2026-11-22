@@ -77,6 +77,9 @@ const View3D = (() => {
       const pm = M(WALLC[b.st][1]), ph = .45, pt = .22;
       box(b.w, ph, pt, pm, cx, h + ph / 2, b.y + pt / 2, shell); box(b.w, ph, pt, pm, cx, h + ph / 2, b.y + b.h - pt / 2, shell); box(pt, ph, b.h, pm, b.x + pt / 2, h + ph / 2, cz, shell); box(pt, ph, b.h, pm, b.x + b.w - pt / 2, h + ph / 2, cz, shell);
       if (b.type === 'hospital') { const cm = new THREE.MeshStandardMaterial({ color: '#d0312d', emissive: '#d0312d', emissiveIntensity: .5 }); box(2.6, .08, .75, cm, cx, h + .5, cz, shell, true); box(.75, .08, 2.6, cm, cx, h + .5, cz, shell, true); }
+      if (b.type === 'waterplant') { for (const sx of [-1.4, 0, 1.4]) cyl(.55, .55, 1.1, 14, M('#2f6fa8', { metalness: .3 }), cx + sx, h + .55, cz, shell); box(b.w * .7, .08, .08, M('#9aa'), cx, h + 1.2, cz, shell); }
+      if (b.type === 'refinery') { cyl(1, 1, 1.6, 16, M('#c9c3b2', { metalness: .4 }), cx - 1, h + .8, cz, shell); cyl(.18, .22, 3.4, 8, M('#5a5550'), cx + 1.6, h + 1.7, cz - .6, shell); box(.9, .5, .9, M('#b03a2e'), cx + .6, h + .25, cz + .8, shell); }
+      if (b.fort) { const sm = M('#9a8a62'), fz = b.door === 'S' ? b.y + b.h + .7 : b.y - .7; for (const sx of [-1, 1]) { box(1.7, .55, .55, sm, b.dx + .5 + sx * 1.9, .27, fz, shell); box(1.2, .4, .5, sm, b.dx + .5 + sx * 1.9, .72, fz, shell); } for (let x = b.x + .5; x < b.x + b.w; x += 1.1) { box(.06, 1.3, .06, M('#555'), x, .65, b.y - .35, shell); box(.06, 1.3, .06, M('#555'), x, .65, b.y + b.h + .35, shell); } box(b.w, .04, .04, M('#777'), cx, 1.15, b.y - .35, shell); box(b.w, .04, .04, M('#777'), cx, 1.15, b.y + b.h + .35, shell); }
       if (b.type === 'camp') { box(.07, 3.2, .07, M('#3a3a3a'), b.x + 1.2, h + 1.6, b.y + 1.2, shell); box(1, .55, .03, M('#5a6b3a'), b.x + 1.72, h + 2.9, b.y + 1.2, shell); for (const sx of [-1, 1]) box(1.6, .5, .5, M('#9a8a62'), b.dx + .5 + sx * 1.6, .25, b.door === 'S' ? b.y + b.h + .6 : b.y - .6, shell); }
       if (shop || big) box(b.w + .5, .1, 1.3, M(['#8a3a2e', '#35587a', '#3d6b4c', '#8f7a3a'][(rnd() * 4) | 0]), cx, fh + .05, b.door === 'S' ? b.y + b.h + .6 : b.y - .6, shell);
       const n = big ? 8 : 2 + ((rnd() * 3) | 0);
@@ -120,7 +123,7 @@ const View3D = (() => {
     for (let i = 0; i < 5; i++) { const l = new THREE.SpotLight(0xffe2b0, 0, 16, .95, .7, 1.2); l.castShadow = i < 2; l.shadow.mapSize.set(1024, 1024); scene.add(l, l.target); lampLights.push(l); }
     // skybridge mall <-> pharmacy, and glowing pads at passage entrances
     bridgeG = new THREE.Group(); { const m = M('#6f7480', { metalness: .4, roughness: .6 }), x = 123.5; box(1.1, .12, 6.6, m, x, 1.95, 56, bridgeG); for (const sx of [-.55, .55]) { box(.06, .55, 6.6, m, x + sx, 2.25, 56, bridgeG); } for (const z of [53.4, 58.6]) for (const sx of [-.45, .45]) box(.12, 1.9, .12, m, x + sx, .95, z, bridgeG); for (let z = 53.2; z < 59; z += .8) box(1.1, .02, .06, M('#e3b62f'), x, 2.02, z, bridgeG, true); } bridgeG.visible = false; scene.add(bridgeG);
-    pads = []; for (const [k, sp, col] of [['hm', 'tunHome', '#7fc24b'], ['hm', 'tunMall', '#7fc24b'], ['mp', 'brMall', '#6cc4ff'], ['mp', 'brPharm', '#6cc4ff'], ['ma', 'tunMall2', '#e3b62f'], ['ma', 'tunArm', '#e3b62f']]) { const e = World.spots[sp], g = new THREE.Group(); box(.86, .05, .86, M('#1c1c20'), 0, .03, 0, g, true); box(.6, .04, .6, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4 }), 0, .07, 0, g, true); g.position.set(e.x / 16, 0, e.y / 16); g.visible = false; scene.add(g); pads.push({ k, g, b: World.bAt(e.x >> 4, e.y >> 4) }); }
+    pads = []; for (const [k, sp, col] of (window.IZ_PADS || [['hm', 'tunHome', '#7fc24b'], ['hm', 'tunMall', '#7fc24b'], ['mp', 'brMall', '#6cc4ff'], ['mp', 'brPharm', '#6cc4ff'], ['ma', 'tunMall2', '#e3b62f'], ['ma', 'tunArm', '#e3b62f']])) { const e = World.spots[sp]; if (!e) continue; const g = new THREE.Group(); box(.86, .05, .86, M('#1c1c20'), 0, .03, 0, g, true); box(.6, .04, .6, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4 }), 0, .07, 0, g, true); g.position.set(e.x / 16, 0, e.y / 16); g.visible = false; scene.add(g); pads.push({ k, g, b: World.bAt(e.x >> 4, e.y >> 4) }); }
     beam = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, 16, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd966, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide })); beam.visible = false; scene.add(beam);
     flash = new THREE.PointLight(0xfff0d0, 0, 11, 1.4); mallL = new THREE.PointLight(0xfff2d8, 0, 18, 1.2); homeL = new THREE.PointLight(0xffe2b0, 0, 12, 1.2); scene.add(flash, mallL, homeL);
     mallL.position.set(World.spots.mall.x / 16, 3, World.spots.mall.y / 16); homeL.position.set(World.spots.home.x / 16, 2.4, World.spots.home.y / 16);
@@ -179,7 +182,7 @@ const View3D = (() => {
       for (const [k2, f] of figs) if (f.o && f.o.model === key) { scene.remove(f.g); figs.delete(k2); }
     } catch (e) { console.error('model ' + key, e); }
   }
-  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 } };
+  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 }, C06: { shX: .15 }, Z01: { shX: .14 }, Z02: { shX: .16, legAmp: .5 } };
   function mkModelFig(o) {
     const T = MODELS[o.model], g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const bones = T.joints.map(() => new THREE.Bone());
@@ -204,12 +207,28 @@ const View3D = (() => {
     if (o.beard) box(.16, .09, .06, hm, 0, .92, .1, body, true); if (o.stache) box(.12, .03, .04, hm, 0, .96, .125, body, true);
     if (o.bag) box(.16, .22, .1, M('#f1f1f1'), .3 * s, .45, .25, body);
     const wep = new THREE.Group(); wep.position.set(.26, .62, .12); body.add(wep);
-    if (o.z) for (const a of arms) a.rotation.x = -1.35;
+    if (o.z) { for (const a of arms) a.rotation.x = -1.35; g.scale.set(o.fat ? .8 : .86, .86, o.fat ? .8 : .86); }
     return { g, body, legs, arms, wep, ph: rnd() * 6, ang: 0, lx: null, lz: null, o };
   }
   function mkCat() { const g = new THREE.Group(), body = new THREE.Group(); g.add(body); const m = M('#e39a3b'); box(.14, .13, .34, m, 0, .17, 0, body); box(.13, .12, .12, m, 0, .27, .2, body); box(.03, .05, .03, m, -.04, .35, .2, body); box(.03, .05, .03, m, .04, .35, .2, body); const tl = box(.03, .22, .03, m, 0, .3, -.2, body); const legs = []; for (const [x, z] of [[-.05, .12], [.05, .12], [-.05, -.12], [.05, -.12]]) { const p = new THREE.Group(); p.position.set(x, .12, z); box(.04, .12, .04, m, 0, -.06, 0, p); body.add(p); legs.push(p); } return { g, body, legs, arms: [], wep: new THREE.Group(), ph: 0, ang: 0, lx: null, lz: null, o: {}, tail: tl }; }
   const WEP = { pipe: [.6, '#aab0b6'], wrench: [.6, '#7c2d2d'], cleaver: [.35, '#d0d5da'], bat: [.7, '#7a5a36'], pistol: [.22, '#222222'], rifle: [.7, '#3a2c1c'] };
   function setWep(f, id) { if (f.wepId === id) return; f.wepId = id; while (f.wep.children.length) f.wep.remove(f.wep.children[0]); const w = WEP[id]; if (!w) return; box(.06, .06, w[0], new THREE.MeshStandardMaterial({ color: w[1], metalness: .5, roughness: .5 }), 0, 0, w[0] / 2, f.wep); if (id === 'cleaver') box(.02, .16, .2, M('#d0d5da', { metalness: .6 }), 0, .05, .3, f.wep); if (id === 'bat') box(.2, .03, .24, M('#8a9096', { metalness: .5 }), 0, 0, .75, f.wep); }
+  const CARRYC = { water: '#3d8fd6', samoon: '#d9a35a', veg: '#4f9a3a', dates: '#7a4a22', fuel: '#c0392b', bandage: '#f2f2f2', medkit: '#e74c3c', ammo9: '#5a5a3a', ammo7: '#5a5a3a', scrap: '#8a8f96', parts: '#6a6f76', can: '#b0b6bc', body: '#6a7a5a' };
+  function carry(f, it) { if (!f || !f.body) return; if (!f.cbox) { f.cbox = new THREE.Mesh(new THREE.BoxGeometry(.32, .24, .26), M('#aaa')); f.cbox.position.set(0, .62, .3); f.cbox.castShadow = true; f.body.add(f.cbox); } f.cbox.visible = !!it; if (it && f.cit !== it) { f.cit = it; f.cbox.material = M(CARRYC[it] || '#b08a5a'); } if (it) { f.arms[0].rotation.x = -1.2; f.arms[1].rotation.x = -1.2; } }
+  let stG = null;
+  function stations(list) {
+    if (stG) scene.remove(stG); stG = new THREE.Group(); scene.add(stG);
+    for (const o of list || []) { const x = o.x / 16, z = o.y / 16, g = new THREE.Group(); g.position.set(x, 0, z); stG.add(g);
+      if (o.k === 'stove') { box(.9, .8, .6, M('#3a3a3e', { metalness: .5 }), 0, .4, 0, g); box(.7, .06, .5, M('#e86a2a', { emissive: '#e86a2a', emissiveIntensity: .8 }), 0, .83, 0, g, true); cyl(.16, .14, .22, 10, M('#9aa0a6', { metalness: .6 }), .18, .97, 0, g); }
+      else if (o.k === 'tank') { cyl(.42, .42, 1.1, 14, M('#2f6fa8', { metalness: .3 }), 0, .55, 0, g); cyl(.06, .06, .5, 6, M('#999'), .5, .3, 0, g); for (let i = 0; i < (o.n || 0); i++) cyl(.1, .1, .3, 8, M('#6cb4ff'), -.6 + (i % 4) * .22, .15, .55 + ((i / 4) | 0) * .22, g); }
+      else if (o.k === 'still') { cyl(.5, .5, .9, 14, M('#c9c3b2', { metalness: .4 }), 0, .45, 0, g); cyl(.07, .07, 1.6, 6, M('#555'), .45, .8, 0, g); for (let i = 0; i < (o.n || 0); i++) box(.2, .28, .14, M('#c0392b'), -.6 + (i % 4) * .24, .14, .6 + ((i / 4) | 0) * .2, g); }
+      else if (o.k === 'bench') { box(1.2, .75, .55, M('#d8d8d8'), 0, .38, 0, g); box(.14, .2, .14, M('#3a9a6a'), -.3, .85, 0, g); box(.1, .25, .1, M('#c84a4a'), .1, .87, 0, g); box(.2, .12, .2, M('#e8e8e8'), .38, .81, 0, g); }
+      else if (o.k === 'anvil') { box(1.1, .75, .6, M('#5a4a3a'), 0, .38, 0, g); box(.35, .2, .2, M('#333', { metalness: .7 }), -.2, .85, 0, g); for (let i = 0; i < (o.n || 0); i++) box(.22, .14, .16, M('#5a5a3a'), .55 + (i % 3) * .24, .07, .5 + ((i / 3) | 0) * .2, g); }
+      else if (o.k === 'bed') { box(.7, .35, 1.5, M('#e8e8e8'), 0, .18, 0, g); box(.6, .1, .3, M('#fff'), 0, .4, -.55, g); }
+      else if (o.k === 'dummy') { cyl(.05, .05, 1.2, 6, M('#6a4a2a'), 0, .6, 0, g); box(.36, .5, .2, M('#c9b27a'), 0, 1, 0, g); cyl(.14, .14, .2, 8, M('#c9b27a'), 0, 1.38, 0, g); }
+      else if (o.k === 'crop') { const st = o.n || 0; box(1, .06, 1, M('#5a4026'), 0, .03, 0, g, true); if (st > 0) for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { const hh = .12 + st * .14; box(.12, hh, .12, M(st >= 3 ? '#7aa83a' : '#4f8a3a'), -.36 + i * .24, hh / 2 + .05, -.3 + j * .3, g); if (st >= 3) box(.08, .08, .08, M('#d0402a'), -.36 + i * .24, hh + .07, -.3 + j * .3, g); } }
+      else if (o.k === 'pile') { for (let i = 0; i < Math.min(12, o.n || 0); i++) box(.3, .22, .26, M(CARRYC[o.it] || '#b08a5a'), (i % 4) * .32 - .48, .11 + ((i / 8) | 0) * .23, (((i / 4) | 0) % 2) * .3, g); }
+    } }
   function upd(key, mk, x, y, dt, st) {
     let f = figs.get(key); if (!f) { f = mk(); figs.set(key, f); scene.add(f.g); }
     f.used = true; const X = x / 16, Z = y / 16; let moving = false;
@@ -221,6 +240,7 @@ const View3D = (() => {
     if (f.legs.length === 4) { f.legs[0].rotation.x = sw; f.legs[3].rotation.x = sw; f.legs[1].rotation.x = -sw; f.legs[2].rotation.x = -sw; if (f.tail) f.tail.rotation.z = Math.sin(t * 3) * .3; }
     else { f.legs[0].rotation.x = sw; f.legs[1].rotation.x = -sw;
       if (st.z) { f.arms[0].rotation.x = -1.35 + Math.sin(f.ph * .7) * .12; f.arms[1].rotation.x = -1.35 - Math.sin(f.ph * .7) * .12; f.body.rotation.z = Math.sin(f.ph * .5) * .16; }
+      else if (st.work && !moving) { f.arms[0].rotation.x = -1.1 + Math.sin(t * 7 + f.ph) * .45; f.arms[1].rotation.x = -1.1 - Math.sin(t * 7 + f.ph) * .45; f.body.rotation.z = Math.sin(t * 3.5) * .05; }
       else { f.arms[0].rotation.x = -sw * .7; f.arms[1].rotation.x = st.swing ? -1.6 + st.swing * 9 : sw * .7; } }
     if (f.legAmp && f.legAmp !== 1 && f.legs.length === 2) { f.legs[0].rotation.x *= f.legAmp; f.legs[1].rotation.x *= f.legAmp; }
     if (st.fall) { f.body.rotation.x = -1.5; f.body.position.set(0, .16, .5); } else { f.body.rotation.x = 0; f.body.position.set(0, 0, 0); }
@@ -255,11 +275,12 @@ const View3D = (() => {
     bridgeG.visible = play && !!G.links.mp; for (const p of pads) p.g.visible = play && !!G.links[p.k] && fl === 0 && (p.b === 0 || p.b === pb);
     for (const k in gates) gates[k].visible = !World.gates[k].open;
     for (const f of figs.values()) f.used = false;
-    for (const z of R.act) upd(z, () => mkFig(z.look), z.x, z.y, dt, { z: 1, fall: z.fall > 0, hide: !see(z), scale: z.type === 'boss' ? 2 : 0 });
+    for (const z of R.act) upd(z, () => mkFig(z.look), z.x, z.y, dt, { z: 1, fall: z.fall > 0, hide: !see(z), scale: z.type === 'boss' ? 2 : z.type === 'giant' ? 2.3 : z.type === 'ali' ? 1 : 0 });
     if (play) {
       for (const b of (R.bodies || [])) upd(b, () => mkFig(b.look), b.x, b.y, dt, { z: 1, fall: true, hide: !see(b) || fl > 0 });
       for (const d of (R.defs || [])) { const f = upd(d, () => mkFig(d.look), d.x, d.y, dt, { hide: !see(d) || fl > 0, face: d.face }); setWep(f, d.kind === 'soldier' ? 'rifle' : 'pipe'); }
-      for (const n of R.npcs) upd(n, () => n.id === 'cat' ? mkCat() : mkFig(LOOK[n.id]), n.x, n.y, dt, { hide: n.hidden || !see(n) || fl > 0 });
+      for (const n of R.npcs) { const f = upd(n, () => n.id === 'cat' ? mkCat() : mkFig(LOOK[n.id] || LOOK.sv0), n.x, n.y, dt, { hide: n.hidden || !see(n) || fl > 0, work: n.work, fall: n.lie, face: n.face }); carry(f, n.carry && n.carry[0]); setWep(f, n.gun || ''); }
+      for (const p of (R.patients || [])) upd(p, () => mkFig(p.look), p.x, p.y, dt, { fall: true, hide: !see(p) || fl > 0 });
       const pf = upd(G, () => mkFig(LOOK.player), G.x, G.y, dt, { hide: G.inVeh >= 0 || (R.inv > 0 && Math.floor(t * 20) % 2 === 1), face: (R.atk > 0 || R.mouse.t > 0) ? Math.PI / 2 - R.aim : null, swing: R.swing > 0 ? R.swing : 0 }); setWep(pf, G.cur);
       G.veh.forEach((v, i) => { const key = v.t + (v.up.armor ? 1 : 0); let o = vehs[i]; if (!o || o.key !== key) { if (o) scene.remove(o.g); o = vehs[i] = { key, g: car(v.t, v.up.armor) }; scene.add(o.g); } o.g.visible = !v.gone; o.g.position.set(v.x / 16, 0, v.y / 16); o.g.rotation.y = -v.a; });
       for (const p of picks) { p.g.visible = !G.taken[p.p.id] && (!p.p.b || p.p.b === pb); p.g.position.y = .45 + Math.sin(t * 3 + p.p.x) * .08; p.g.rotation.y = t * 1.5; }
@@ -287,5 +308,5 @@ const View3D = (() => {
   function follow(h, dt, rate) { let d = h + Math.PI - YAW; d = Math.atan2(Math.sin(d), Math.cos(d)); if (Math.abs(d) > 2.2) return; const m = rate * dt; YAW += Math.max(-m, Math.min(m, d * Math.min(1, dt * 3) * 1.4)); }
   const resetYaw = () => { YAW = 0.62; };
   const toWorld = (ix, iy) => window.__flat ? [ix, iy] : [ix * Math.cos(YAW) + iy * Math.sin(YAW), -ix * Math.sin(YAW) + iy * Math.cos(YAW)];
-  return { init, build, resize, frame, project, pick, toWorld, follow, resetYaw };
+  return { init, build, resize, frame, project, pick, toWorld, follow, resetYaw, stations };
 })();

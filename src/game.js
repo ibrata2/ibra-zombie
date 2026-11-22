@@ -72,17 +72,17 @@ for (let i = 0; i < 4; i++) LOOK['st' + i] = { id: 'st' + i, skin: '#c99870', sh
 for (let i = 0; i < 16; i++) LOOK['sv' + i] = { id: 'sv' + i, skin: ['#c99870', '#b98860', '#d8a880'][i % 3], shirt: i % 4 === 1 ? null : ['#4a7a4a', '#8a3a3a', '#3b6ea5', '#6a5a8a', '#a05a2a'][i % 5], robe: i % 4 === 1 ? ['#e9e4d6', '#16161a'][i % 2] : null, pants: '#2c2f36', hair: '#1b1410', hat: i % 3 === 2 ? 'hijab' : null, hatc: ['#8e3b5e', '#16161a', '#3a5a8a'][i % 3], beard: i % 4 === 3, fat: i === 5 };
 const ZT = { normal: { hp: 30, sp: 17, dmg: 7 }, vendor: { hp: 30, sp: 15, dmg: 7 }, cop: { hp: 42, sp: 19, dmg: 8 }, gen: { hp: 70, sp: 11, dmg: 10 }, fat: { hp: 80, sp: 12, dmg: 12 }, soldier: { hp: 55, sp: 20, dmg: 10 }, hassan: { hp: 26, sp: 14, dmg: 5 }, colonel: { hp: 170, sp: 18, dmg: 14 }, boss: { hp: 750, sp: 24, dmg: 22 } };
 const ZLINES = {
-  normal: [['أأأأه..', 'مخخخ..', 'وين.. الكهرباء..', 'راتب.. راتب..', 'مممم.. تمن ومرق..', 'الوطني.. طفت..', 'نت.. ضعيف..'], ['Uuugh..', 'Braaains..', 'Where... is the power..', 'Salary... salary..', 'Mmm... rice and stew..', 'The grid... is out..', 'Wifi... weak..']],
-  vendor: [['باكلة.. باكلة حارّة..', 'لبلبي.. لبلبي..', 'غاز.. غاز..', 'طماطة بألف..', 'عتيك.. للبيع..'], ['Beans... hot beans..', 'Chickpeas... chickpeas..', 'Gas... gas cylinders..', 'Tomatoes... one thousand..', 'Old stuff... for sale..']],
-  cop: [['صفّ على اليمين..', 'سنويّتك..', '*صفااارة*', 'وين الحزام؟', 'ممنوع.. الوكوف..'], ['Pull over...', 'Registration...', '*whiiistle*', 'Seatbelt?', 'No... parking..']],
-  gen: [['الأمبير.. بعشرين..', 'سحب.. مولدة..', 'ادفع.. الاشتراك..', 'طفّي.. السبلت..'], ['Twenty... per amp..', 'Generator... line..', 'Pay... the subscription..', 'Turn off... the AC..']],
-  fat: [['كباااب..', 'بعد.. نفر..', 'تشريب..'], ['Kebaaab..', 'One more... portion..', 'Tashreeb..']],
-  soldier: [['استعد..', 'إجازة.. إجازة..', 'منو.. بالباب..', 'واجب.. ليلي..'], ['Atten-tion..', 'Leave... I want leave..', "Who's... at the gate..", 'Night... shift..']],
-  hassan: [['صمووون..', 'ألف.. دينار..', 'جيراااان..'], ['Breaaad..', 'One thousand... dinars..', 'Neighbooor..']],
-  colonel: [['وين.. التحية؟', 'ملف.. ملف..', 'باجر.. تعال..'], ['Where is... the salute?', 'File... file..', 'Come back... tomorrow..']],
-  boss: [['بييييبسي!', 'غازاااات!', 'منتهييي!'], ['PEEEPSI!', 'FIIIZZ!', 'EXPIIIRED!']]
+  normal: [['جوعاااان..', 'مخخخ.. أريد مخخخ..', 'أكل.. أكل..', 'عضّة.. بس عضّة..', 'لحمممم..', 'غغغغ.. ريحتك طيبة..', 'تعال.. تعال يمّي..', 'آآآم..'], ['Hungryyyy..', 'Braaains.. I want braaains..', 'Food.. food..', 'One bite.. just one bite..', 'Meeeat..', 'Grrr.. you smell good..', 'Come.. come here..', 'Aaahm..']],
+  vendor: [['باكلة.. بمخ..', 'لبلبي.. ويه لحم بشر..', 'أريد أعضّ.. عالحساب..', 'طازة.. إنت طازة..', 'كيلو.. مخ..'], ['Beans.. with brains..', 'Chickpeas.. with human meat..', 'I want a bite.. on credit..', 'Fresh.. you are fresh..', 'A kilo.. of brains..']],
+  cop: [['وكّف.. أريد أعضّك..', 'هوية.. وبعدين.. أاكلك..', 'مخالفة.. مخك..', 'غغغ.. لا تهرب..'], ['Stop.. I want to bite you..', 'ID.. then.. I eat you..', 'Fine.. your brain..', 'Grrr.. no running..']],
+  gen: [['أمبير.. ولحم..', 'مخ.. بعشرين ألف..', 'ادفع.. بذراعك..', 'جوعاان.. والمولدة طافية..'], ['Amps.. and meat..', 'Brains.. twenty thousand each..', 'Pay.. with your arm..', 'Hungry.. and the generator is off..']],
+  fat: [['جوعااااان.. جوعااان..', 'نفر.. بشر.. مشوي..', 'أاكلك.. وأطلب بعد..', 'عضّة.. اثنين.. ثلاثة..'], ['Hungryyyy.. hungryyy..', 'One portion.. of human.. grilled..', 'I eat you.. then order more..', 'One bite.. two.. three..']],
+  soldier: [['استعد.. للعضّة..', 'أريد.. لحم..', 'تعيين.. مخخخ..', 'غغغ.. جوعان من الواجب..'], ['Ready.. for the bite..', 'Want.. meat..', 'Rations.. braaains..', 'Grrr.. hungry since my shift..']],
+  hassan: [['جيراااان.. جوعااان..', 'صمون.. ولحم جار..', 'تعال.. أريد أعضّك يا جار..'], ['Neighbooor.. hungryyy..', 'Bread.. and neighbor meat..', 'Come.. I want to bite you, neighbor..']],
+  colonel: [['تحية.. وبعدين عضّة..', 'مخك.. للتحقيق..', 'جوعان.. منذ الفجر..'], ['Salute.. then a bite..', 'Your brain.. for questioning..', 'Hungry.. since dawn..']],
+  boss: [['بييييبسي.. ولحممم!', 'جوعاااان!', 'مخخخخ!'], ['PEEEPSI.. and meeeat!', 'HUNGRYYYY!', 'BRAAAINS!']]
 };
-const OUCH = [['آخ!', 'وكعت..', 'رجلي!', 'منو دفرني؟'], ['Ow!', 'I fell..', 'My leg!', 'Who pushed me?']];
+const OUCH = [['غغغ..!', 'آآآخ.. جوعان..', 'وكعت.. بس بعدني جوعان..', 'رجلي.. أكلتها؟'], ['Grrr..!', 'Aaagh.. hungry..', 'Fell.. still hungry..', 'My leg.. did I eat it?']];
 const ZONES = [['بغداد الجديدة', 'Baghdad Jadida'], ['السوق', 'The Market'], ['الكرادة', 'Karrada'], ['شارع المتنبي', 'Mutanabbi St.'], ['صوب المعسكر', 'East Bank']];
 const EMPTY = [['فارغ. بس غبرة.', 'ماكو شي.. حتى الصرصر هاجر.', 'فارغ. واحد سبقني.', 'بس كياسة نايلون جوّه كيس نايلون.'], ['Empty. Just dust.', 'Nothing... even the roaches moved out.', 'Empty. Someone beat me to it.', 'Only plastic bags inside a plastic bag.']];
 const ORD = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
@@ -1340,9 +1340,9 @@ NPC.umali.n = ['أم علي', 'Um Ali']; NPC.ali = { n: ['علي', 'Ali'] }; LOO
 Object.assign(ZT, { giant: { hp: 340, sp: 10, dmg: 22 }, doctor: { hp: 30, sp: 15, dmg: 7 }, ali: { hp: 45, sp: 13, dmg: 3 } });
 Object.assign(ZMODEL, { giant: 'Z05' });
 Object.assign(ZLINES, {
-  giant: [['أنا مو ضخم.. عظامي عريضة.', 'جوعاااان..', 'منو أكل الكبة مالتي؟!', 'هههههغغغ..'], ["I'm not big... I'm big-boned.", 'Hungryyyy...', 'Who ate my kubba?!', 'Hhhhhggg...']],
-  doctor: [['الدور.. خذ رقم..', 'افتح حلگك.. آآآ..', 'تعال باچر..'], ['Take a number...', 'Open wide... aaah...', 'Come back tomorrow...']],
-  ali: [['كتاب.. كتااااب..', 'يمّه.. شنو الغدا..', 'المتنبي.. جمعة..'], ['Book... boooook...', 'Mom... what is for lunch...', 'Mutanabbi... Friday...']]
+  giant: [['جوعاااااان!', 'مخخخ.. كثييير مخ..', 'أاكل.. المول كله..', 'هغغغغ.. لحممم..'], ['HUNGRYYYY!', 'Braaains.. lots of braaains..', 'I eat.. the whole mall..', 'Hhhggg.. meeeat..']],
+  doctor: [['افتح حلگك.. أريد أعضّ..', 'عملية.. على مخك..', 'جوعان.. من الخفارة..'], ['Open wide.. I want to bite..', 'Surgery.. on your brain..', 'Hungry.. since the night shift..']],
+  ali: [['يمّه.. جوعااان..', 'كتاب.. ومخ..', 'غغغ.. شنو الغدا.. إنت؟'], ['Mom.. hungryyy..', 'Book.. and brains..', 'Grrr.. what is lunch.. you?']]
 });
 
 // ---------------------------------------------------------------- setup per world build

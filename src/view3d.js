@@ -134,7 +134,23 @@ const View3D = (() => {
   function tree(x, z) { const g = new THREE.Group(); cyl(.1, .16, 1.8, 6, M('#5a4630'), 0, .9, 0, g); for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(new THREE.IcosahedronGeometry(rr(.6, 1), 1), M(['#5b7340', '#6c8249', '#4d6436'][i % 3])); s.position.set(rr(-.6, .6), rr(1.9, 2.8), rr(-.6, .6)); s.castShadow = true; g.add(s); } g.position.set(x, 0, z); scene.add(g); }
   function pole(x, z, lamp) { const g = new THREE.Group(), m = M('#4f4f4c'); box(.1, 4.2, .1, m, 0, 2.1, 0, g); if (lamp) { box(.9, .06, .08, m, .45, 4.2, 0, g); const l = box(.34, .07, .16, new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffe9c0', emissiveIntensity: 0 }), .85, 4.15, 0, g, true); lamps.push({ mesh: l, x: x + .85, z }); } else box(1, .08, .08, M('#5a4630'), 0, 3.9, 0, g); g.position.set(x, 0, z); scene.add(g); }
   function wheel(g, x, z, r = .2) { const w = cyl(r, r, .14, 10, M('#151515'), x, r, z, g); w.rotation.x = Math.PI / 2; }
+  const VMODEL = { bike: 'V01' }, VLEN = { bike: 1.35, stuta: 2.1, kia: 2.5, saipa: 2.1, truck: 3.0 }, VFLIP = {}, VM = {};
+  async function loadVModel(t) {
+    const key = VMODEL[t]; if (!key || VM[t] !== undefined || !THREE.GLTFLoader) return; VM[t] = null;
+    try { let buf = null;
+      if (window.ibra && window.ibra.model) { const b = await window.ibra.model(key); if (b) buf = b.buffer ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : b; }
+      else { const r = await fetch('models/' + key + '.glb'); if (r.ok) buf = await r.arrayBuffer(); }
+      if (!buf) return; const gltf = await new Promise((res, rej) => new THREE.GLTFLoader().parse(buf, '', res, rej));
+      let mesh = null; gltf.scene.updateMatrixWorld(true); gltf.scene.traverse(o => { if (o.isMesh && !mesh) mesh = o; }); if (!mesh) return;
+      const geo = mesh.geometry.clone(); geo.applyMatrix4(mesh.matrixWorld); geo.computeBoundingBox(); let bb = geo.boundingBox;
+      if (bb.max.z - bb.min.z > bb.max.x - bb.min.x) geo.rotateY(Math.PI / 2); if (VFLIP[t]) geo.rotateY(Math.PI);
+      geo.computeBoundingBox(); bb = geo.boundingBox; const k = VLEN[t] / (bb.max.x - bb.min.x); geo.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2); geo.scale(k, k, k); geo.computeVertexNormals();
+      const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material; mat.roughness = .7; VM[t] = { geo, mat };
+      for (const o of vehs) if (o && o.key && o.key.startsWith(t)) o.key = '';
+    } catch (e) { console.error('vmodel', t, e); }
+  }
   function car(type, armor, wreck) {
+    if (!wreck && VMODEL[type]) { const V = VM[type]; if (V) { const g = new THREE.Group(), m = new THREE.Mesh(V.geo, V.mat); m.castShadow = true; m.receiveShadow = true; g.add(m); if (armor) { const am = M('#3d4232', { metalness: .5 }); box(VLEN[type] * .7, .35, .04, am, 0, .55, .5, g); box(VLEN[type] * .7, .35, .04, am, 0, .55, -.5, g); } return g; } loadVModel(type); }
     const g = new THREE.Group(), cols = { kia: '#d9d8d2', saipa: '#c9a02a', stuta: '#2d5f8f', truck: '#55683a', bike: '#a8322a' }, c = new THREE.Color(cols[type] || '#999999'); if (wreck) c.lerp(new THREE.Color('#6b4a30'), .55);
     const bm = new THREE.MeshStandardMaterial({ color: c, roughness: wreck ? 1 : .5, metalness: wreck ? 0 : .3 }), glass = wreck ? bm : M('#27333b', { roughness: .25 });
     if (type === 'bike') { wheel(g, -.42, 0, .24); wheel(g, .42, 0, .24); box(.8, .05, .05, bm, 0, .42, 0, g); box(.05, .4, .05, bm, .38, .55, 0, g); box(.05, .05, .4, M('#333333'), .38, .75, 0, g); box(.22, .05, .12, M('#222222'), -.2, .6, 0, g); return g; }
@@ -182,7 +198,7 @@ const View3D = (() => {
       for (const [k2, f] of figs) if (f.o && f.o.model === key) { scene.remove(f.g); figs.delete(k2); }
     } catch (e) { console.error('model ' + key, e); }
   }
-  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 }, C06: { shX: .15 }, Z01: { shX: .14 }, Z02: { shX: .16, legAmp: .5 }, Z05: { shX: .2, legAmp: .6 }, Z04: { shX: .18, legAmp: .7 }, Z06: { shX: .15 }, Z07: { shX: .19, legAmp: .45 }, Z08: { shX: .18 } };
+  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 }, C06: { shX: .15 }, Z01: { shX: .14 }, Z02: { shX: .16, legAmp: .5 }, Z05: { shX: .2, legAmp: .6 }, Z04: { shX: .18, legAmp: .7 }, Z06: { shX: .15 }, Z07: { shX: .19, legAmp: .45 }, Z08: { shX: .18 }, Z10: { shX: .17, legAmp: .45 } };
   function mkModelFig(o) {
     const T = MODELS[o.model], g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const bones = T.joints.map(() => new THREE.Bone());

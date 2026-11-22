@@ -318,7 +318,7 @@ function lockAct(k, key) {
 }
 
 // ---------------------------------------------------------------- zombies
-const ZL = {}, ZMODEL = { normal: 'Z01', vendor: 'Z02', fat: 'Z05', gen: 'Z04', soldier: 'Z06', hassan: 'Z07', colonel: 'Z08' };
+const ZL = {}, ZMODEL = { normal: 'Z01', vendor: 'Z02', fat: 'Z05', gen: 'Z04', soldier: 'Z06', hassan: 'Z07', colonel: 'Z08', woman: 'Z10' };
 function zlook(type, v) {
   const k = type + v; if (ZL[k]) return ZL[k];
   const o = { id: 'z' + k, z: 1, skin: ['#8fae7a', '#7fa08a', '#9ab07a'][v % 3], shirt: ['#7a4a4a', '#4a5d7a', '#6a6a55', '#5a4a6a', '#8a7a4a', '#3f5f4f'][v % 6], pants: ['#33373f', '#4a4033', '#2f3a33'][v % 3], hair: '#22201a' };
@@ -332,13 +332,14 @@ function zlook(type, v) {
   if (type === 'hassan') Object.assign(o, { robe: '#e9e4d6', shirt: '#e9e4d6', bald: 1, stache: 1, bag: 1, fat: 1 });
   if (type === 'colonel') Object.assign(o, { shirt: '#1c2f55', pants: '#1c2f55', hat: 'cap', hatc: '#1c2f55', fat: 1, stache: 1 });
   if (type === 'boss') Object.assign(o, { shirt: '#1b4fa3', pants: '#222', fat: 1, bald: 1 });
+  if (type === 'woman') Object.assign(o, { robe: '#16161a', shirt: '#16161a', hat: 'hijab', hatc: '#16161a' });
   if (type === 'doctor') Object.assign(o, { shirt: '#eef0f0', pants: '#5a7a9a' });
   if (type === 'giant') Object.assign(o, { fat: 1, shirt: '#5a3a2a', bald: 1 });
   if (type === 'ali') Object.assign(o, { shirt: '#1f7a3a', pants: '#2c2f36', skin: '#a9b88a' });
   return ZL[k] = o;
 }
 function mkZ(type, x, y) { const s = ZT[type]; return { type, s, x, y, hp: s.hp, look: zlook(type, (Math.random() * 6) | 0), dir: (Math.random() * 4) | 0, wob: rand(0, 6), kx: 0, ky: 0, fall: 0, scare: 0, alert: 0, at: .5, wt: rand(0, 3), wa: null, say: rand(3, 12), flash: 0, guard: 0 }; }
-function ztype(zn) { const r = Math.random(); if (zn === 0) return r < .1 ? 'vendor' : r < .18 ? 'fat' : 'normal'; if (zn === 1) return r < .32 ? 'vendor' : r < .42 ? 'cop' : r < .49 ? 'gen' : r < .56 ? 'fat' : 'normal'; if (zn === 2) return r < .2 ? 'cop' : r < .3 ? 'fat' : r < .36 ? 'gen' : 'normal'; if (zn === 3) return r < .22 ? 'vendor' : r < .3 ? 'gen' : 'normal'; return r < .6 ? 'soldier' : 'normal'; }
+function ztype(zn) { if (zn < 4 && Math.random() < .12) return 'woman'; const r = Math.random(); if (zn === 0) return r < .1 ? 'vendor' : r < .18 ? 'fat' : 'normal'; if (zn === 1) return r < .32 ? 'vendor' : r < .42 ? 'cop' : r < .49 ? 'gen' : r < .56 ? 'fat' : 'normal'; if (zn === 2) return r < .2 ? 'cop' : r < .3 ? 'fat' : r < .36 ? 'gen' : 'normal'; if (zn === 3) return r < .22 ? 'vendor' : r < .3 ? 'gen' : 'normal'; return r < .6 ? 'soldier' : 'normal'; }
 const ZCOUNT = [22, 32, 34, 26, 36];
 function spawnAll() {
   R.zombies.length = 0; const f = G.flags;
@@ -1346,10 +1347,11 @@ ITEMS.veg = { n: ['خضرة', 'Vegetables'], food: 14 };
 ITEMS.alibody = { n: ['علي (فاقد الوعي)', 'Ali (unconscious)'], q: 1, d: ['وصّله للمستشفى، لنور', 'Take him to Noor at the hospital'] };
 FOODS.push('veg');
 NPC.umali.n = ['أم علي', 'Um Ali']; NPC.ali = { n: ['علي', 'Ali'] }; LOOK.ali = { id: 'al', shirt: '#1f7a3a', pants: '#2c2f36', hair: '#1b1410' };
-Object.assign(ZT, { giant: { hp: 340, sp: 10, dmg: 22 }, doctor: { hp: 30, sp: 15, dmg: 7 }, ali: { hp: 45, sp: 13, dmg: 3 } });
+Object.assign(ZT, { woman: { hp: 28, sp: 16, dmg: 6 }, giant: { hp: 340, sp: 10, dmg: 22 }, doctor: { hp: 30, sp: 15, dmg: 7 }, ali: { hp: 45, sp: 13, dmg: 3 } });
 Object.assign(ZMODEL, { giant: 'Z05' });
 Object.assign(ZLINES, {
   giant: [['جوعاااااان!', 'مخخخ.. كثييير مخ..', 'أاكل.. المول كله..', 'هغغغغ.. لحممم..'], ['HUNGRYYYY!', 'Braaains.. lots of braaains..', 'I eat.. the whole mall..', 'Hhhggg.. meeeat..']],
+  woman: [['جوعانة.. جوعانة..', 'يمّه.. لحم..', 'تعال حبيبي.. أريد أعضّك..', 'مخ.. بالدولمة..', 'غغغ.. وين الغدا..'], ['Hungry.. so hungry..', 'Dear.. meat..', 'Come here, dear.. I want a bite..', 'Brains.. in the dolma..', 'Grrr.. where is lunch..']],
   doctor: [['افتح حلگك.. أريد أعضّ..', 'عملية.. على مخك..', 'جوعان.. من الخفارة..'], ['Open wide.. I want to bite..', 'Surgery.. on your brain..', 'Hungry.. since the night shift..']],
   ali: [['يمّه.. جوعااان..', 'كتاب.. ومخ..', 'غغغ.. شنو الغدا.. إنت؟'], ['Mom.. hungryyy..', 'Book.. and brains..', 'Grrr.. what is lunch.. you?']]
 });
@@ -1667,6 +1669,7 @@ const ZDROP = {
   gen: [['parts', .42], ['fuel', .14], ['dinar', .32, 5000, 20000], ['scrap', .2, 1, 2], ['invoice', .03]],
   fat: [['can', .25], ['samoon', .2, 1, 2], ['dinar', .2, 1000, 4000], ['shirt', .08], ['knife', .04]],
   soldier: [['ammo7', .32, 6, 12], ['helmet', .07], ['vest', .05], ['medkit', .08], ['dinar', .15, 2000, 5000], ['rifle', .015]],
+  woman: [['dinar', .4, 2000, 10000], ['gold', .1], ['phone', .08], ['samoon', .12], ['bandage', .08]],
   doctor: [['bandage', .35], ['medkit', .12], ['dinar', .2, 3000, 8000], ['watch', .06]],
   giant: [['dinar', 1, 15000, 40000], ['gold', .5], ['parts', 1, 2, 2], ['scrap', 1, 4, 4]]
 };

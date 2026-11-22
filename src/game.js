@@ -318,7 +318,7 @@ function lockAct(k, key) {
 }
 
 // ---------------------------------------------------------------- zombies
-const ZL = {}, ZMODEL = { normal: 'Z01', vendor: 'Z02' };
+const ZL = {}, ZMODEL = { normal: 'Z01', vendor: 'Z02', fat: 'Z05', gen: 'Z04' };
 function zlook(type, v) {
   const k = type + v; if (ZL[k]) return ZL[k];
   const o = { id: 'z' + k, z: 1, skin: ['#8fae7a', '#7fa08a', '#9ab07a'][v % 3], shirt: ['#7a4a4a', '#4a5d7a', '#6a6a55', '#5a4a6a', '#8a7a4a', '#3f5f4f'][v % 6], pants: ['#33373f', '#4a4033', '#2f3a33'][v % 3], hair: '#22201a' };
@@ -1338,7 +1338,7 @@ ITEMS.alibody = { n: ['علي (فاقد الوعي)', 'Ali (unconscious)'], q: 1
 FOODS.push('veg');
 NPC.umali.n = ['أم علي', 'Um Ali']; NPC.ali = { n: ['علي', 'Ali'] }; LOOK.ali = { id: 'al', shirt: '#1f7a3a', pants: '#2c2f36', hair: '#1b1410' };
 Object.assign(ZT, { giant: { hp: 340, sp: 10, dmg: 22 }, doctor: { hp: 30, sp: 15, dmg: 7 }, ali: { hp: 45, sp: 13, dmg: 3 } });
-Object.assign(ZMODEL, { giant: 'Z01' });
+Object.assign(ZMODEL, { giant: 'Z05' });
 Object.assign(ZLINES, {
   giant: [['أنا مو ضخم.. عظامي عريضة.', 'جوعاااان..', 'منو أكل الكبة مالتي؟!', 'هههههغغغ..'], ["I'm not big... I'm big-boned.", 'Hungryyyy...', 'Who ate my kubba?!', 'Hhhhhggg...']],
   doctor: [['الدور.. خذ رقم..', 'افتح حلگك.. آآآ..', 'تعال باچر..'], ['Take a number...', 'Open wide... aaah...', 'Come back tomorrow...']],

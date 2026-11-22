@@ -59,9 +59,9 @@ const colLevel = () => { let l = 0; for (let i = 0; i < CLV.length; i++) if (G.c
 const secured = zn => { const l = colLevel(); for (let i = 1; i <= l; i++) if (CLV[i][2] === zn) return true; return false; };
 const LOOK = {
   player: { id: 'pl', model: 'C01', shirt: '#c9a84c', pants: '#2a2f3a', hair: '#17110d' },
-  aj: { id: 'aj', robe: '#e9e4d6', shirt: '#e9e4d6', hat: 'shemagh', hatc: '#ececec', beard: 1, hair: '#666', fat: 1 },
-  noor: { id: 'no', shirt: '#f4f4f4', pants: '#3a5a8a', hat: 'hijab', hatc: '#8e3b5e' },
-  mur: { id: 'mu', shirt: '#3d5a80', pants: '#333', hair: '#111', stache: 1, hat: 'cap', hatc: '#c33' },
+  aj: { id: 'aj', model: 'C02', robe: '#e9e4d6', shirt: '#e9e4d6', hat: 'shemagh', hatc: '#ececec', beard: 1, hair: '#666', fat: 1 },
+  noor: { id: 'no', model: 'C03', shirt: '#f4f4f4', pants: '#3a5a8a', hat: 'hijab', hatc: '#8e3b5e' },
+  mur: { id: 'mu', model: 'C04', shirt: '#3d5a80', pants: '#333', hair: '#111', stache: 1, hat: 'cap', hatc: '#c33' },
   saif: { id: 'sa', shirt: '#e2334a', pants: '#1a1a1a', hair: '#2b1b10', phone: 1 },
   sol: { id: 'so', shirt: '#5a6b3a', pants: '#4a5a30', hat: 'helmet', hatc: '#4a5a30' },
   haji: { id: 'hj', robe: '#8a7a5a', shirt: '#8a7a5a', beard: 1, hair: '#ddd', hat: 'shemagh', hatc: '#c33' },

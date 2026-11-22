@@ -161,7 +161,7 @@ const View3D = (() => {
       const geo = mesh.geometry.clone(); geo.applyMatrix4(mesh.matrixWorld); geo.computeBoundingBox();
       const bb = geo.boundingBox, h = bb.max.y - bb.min.y, k = MODEL_H / h; geo.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2); geo.scale(k, k, k);
       if (MODEL_FLIP[key]) geo.rotateY(Math.PI);
-      const H = MODEL_H, hipY = .52 * H, shY = .80 * H, shX = .115 * H, armTop = .86 * H, armBot = .40 * H, pos = geo.attributes.position, n = pos.count;
+      const MP = MODEL_P[key] || {}, H = MODEL_H, hipY = .52 * H, shY = .80 * H, shX = (MP.shX || .115) * H, armTop = .86 * H, armBot = .40 * H, pos = geo.attributes.position, n = pos.count;
       const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
       // bones: 0 root, 1 hips, 2 legL(+x), 3 legR(-x), 4 spine, 5 armL(+x), 6 armR(-x)
       for (let i = 0; i < n; i++) {
@@ -175,18 +175,18 @@ const View3D = (() => {
       }
       geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
       const mat = mesh.material; mat.side = THREE.FrontSide;
-      MODELS[key] = { geo, mat, joints: [[0, 0, 0, -1], [0, hipY, 0, 0], [shX * .55, hipY - .02 * H, 0, 1], [-shX * .55, hipY - .02 * H, 0, 1], [0, hipY + .12 * H, 0, 1], [shX, shY, 0, 4], [-shX, shY, 0, 4]], hand: [.2 * H, .44 * H] };
+      MODELS[key] = { geo, mat, legAmp: MP.legAmp || 1, joints: [[0, 0, 0, -1], [0, hipY, 0, 0], [shX * .55, hipY - .02 * H, 0, 1], [-shX * .55, hipY - .02 * H, 0, 1], [0, hipY + .12 * H, 0, 1], [shX, shY, 0, 4], [-shX, shY, 0, 4]], hand: [.2 * H, .44 * H] };
       for (const [k2, f] of figs) if (f.o && f.o.model === key) { scene.remove(f.g); figs.delete(k2); }
     } catch (e) { console.error('model ' + key, e); }
   }
-  const MODEL_FLIP = {};
+  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 } };
   function mkModelFig(o) {
     const T = MODELS[o.model], g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const bones = T.joints.map(() => new THREE.Bone());
     T.joints.forEach((j, i) => { const p = j[3]; if (p < 0) bones[i].position.set(j[0], j[1], j[2]); else { const q = T.joints[p]; bones[i].position.set(j[0] - q[0], j[1] - q[1], j[2] - q[2]); bones[p].add(bones[i]); } });
     const sm = new THREE.SkinnedMesh(T.geo, T.mat); sm.add(bones[0]); bones[0].updateMatrixWorld(true); sm.bind(new THREE.Skeleton(bones)); bones[5].rotation.z = -.24; bones[6].rotation.z = .24; sm.castShadow = true; sm.receiveShadow = true; sm.frustumCulled = false; body.add(sm);
     const wep = new THREE.Group(); wep.position.set(T.hand[0] - T.joints[5][0], T.hand[1] - T.joints[5][1], .05); bones[5].add(wep);
-    return { g, body, legs: [bones[2], bones[3]], arms: [bones[6], bones[5]], wep, ph: rnd() * 6, ang: 0, lx: null, lz: null, o, model: true };
+    return { g, body, legs: [bones[2], bones[3]], arms: [bones[6], bones[5]], wep, ph: rnd() * 6, ang: 0, lx: null, lz: null, o, model: true, legAmp: T.legAmp };
   }
   function mkFig(o) {
     if (o.model && MODELS[o.model]) return mkModelFig(o);
@@ -222,6 +222,7 @@ const View3D = (() => {
     else { f.legs[0].rotation.x = sw; f.legs[1].rotation.x = -sw;
       if (st.z) { f.arms[0].rotation.x = -1.35 + Math.sin(f.ph * .7) * .12; f.arms[1].rotation.x = -1.35 - Math.sin(f.ph * .7) * .12; f.body.rotation.z = Math.sin(f.ph * .5) * .16; }
       else { f.arms[0].rotation.x = -sw * .7; f.arms[1].rotation.x = st.swing ? -1.6 + st.swing * 9 : sw * .7; } }
+    if (f.legAmp && f.legAmp !== 1 && f.legs.length === 2) { f.legs[0].rotation.x *= f.legAmp; f.legs[1].rotation.x *= f.legAmp; }
     if (st.fall) { f.body.rotation.x = -1.5; f.body.position.set(0, .16, .5); } else { f.body.rotation.x = 0; f.body.position.set(0, 0, 0); }
     f.g.visible = !st.hide; return f;
   }

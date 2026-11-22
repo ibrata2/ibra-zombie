@@ -64,7 +64,7 @@ const View3D = (() => {
     // buildings: outer shell (walls + roof) and cut-away inside view
     for (const b of World.buildings) {
       const big = b.type === 'mall' || b.type === 'warehouse', shop = ['shop', 'butcher', 'pharmacy', 'bookshop'].includes(b.type);
-      const floors = b.type === 'mall' || b.type === 'hospital' ? 3 : b.type === 'camp' ? 1 : b.type === 'warehouse' ? 2 : (b.type === 'booth' || b.type === 'armory' || b.type === 'home') ? 1 : (rnd() < .45 ? 2 : 1) + (World.zoneOf(b.x) === 2 && rnd() < .5 ? 1 : 0), fh = 1.7, h = floors * fh;
+      const floors = b.type === 'landmark' ? (b.lm === 'tower' || b.lm === 'stadium' || b.lm === 'arch' || b.lm === 'frieze' || b.lm === 'bluedome' ? 1 : 2) : b.type === 'colony' ? 2 : b.type === 'mall' || b.type === 'hospital' ? 3 : b.type === 'camp' ? 1 : b.type === 'warehouse' ? 2 : (b.type === 'booth' || b.type === 'armory' || b.type === 'home') ? 1 : (rnd() < .45 ? 2 : 1) + (World.zoneOf(b.x) === 2 && rnd() < .5 ? 1 : 0), fh = 1.7, h = floors * fh;
       const cx = b.x + b.w / 2, cz = b.y + b.h / 2, shell = new THREE.Group(), inside = new THREE.Group(); scene.add(shell, inside); inside.visible = false; bld.push({ shell, inside });
       const mk = (len, kind) => { const tx = tex(b.st, kind).clone(); tx.needsUpdate = true; tx.repeat.set(Math.max(1, Math.round(len / 2.4)), kind === 'shop' ? 1 : floors); return new THREE.MeshStandardMaterial({ map: tx, roughness: .95 }); };
       const front = b.door === 'S' ? 4 : 5, ms = []; for (let i = 0; i < 6; i++) ms.push(i === 2 || i === 3 ? new THREE.MeshStandardMaterial({ map: ROOFS[(rnd() * ROOFS.length) | 0], roughness: 1 }) : mk(i < 2 ? b.h : b.w, 'win'));
@@ -77,6 +77,21 @@ const View3D = (() => {
       const pm = M(WALLC[b.st][1]), ph = .45, pt = .22;
       box(b.w, ph, pt, pm, cx, h + ph / 2, b.y + pt / 2, shell); box(b.w, ph, pt, pm, cx, h + ph / 2, b.y + b.h - pt / 2, shell); box(pt, ph, b.h, pm, b.x + pt / 2, h + ph / 2, cz, shell); box(pt, ph, b.h, pm, b.x + b.w - pt / 2, h + ph / 2, cz, shell);
       if (b.type === 'hospital') { const cm = new THREE.MeshStandardMaterial({ color: '#d0312d', emissive: '#d0312d', emissiveIntensity: .5 }); box(2.6, .08, .75, cm, cx, h + .5, cz, shell, true); box(.75, .08, 2.6, cm, cx, h + .5, cz, shell, true); }
+      if (b.type === 'landmark') { const gm = M('#d9a630', { metalness: .8, roughness: .3, emissive: '#5a3a00', emissiveIntensity: .3 }), tq = M('#2a8a9a', { metalness: .3, roughness: .4 }), wh = M('#e8e2d0');
+        if (b.lm === 'dome' || b.lm === 'clockdome' || b.lm === 'bluedome') { const dm = b.lm === 'dome' ? gm : b.lm === 'bluedome' ? M('#1f6fb0', { metalness: .4, roughness: .3 }) : tq, sph = new THREE.Mesh(new THREE.SphereGeometry(3.2, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2), dm); sph.position.set(cx, h, cz); sph.castShadow = true; shell.add(sph); if (b.lm === 'bluedome') sph.position.x -= 1.4;
+          if (b.lm === 'bluedome') { const s2 = new THREE.Mesh(new THREE.SphereGeometry(3.2, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2), dm); s2.position.set(cx + 1.4, h, cz); s2.rotation.y = Math.PI; shell.add(s2); }
+          if (b.lm === 'dome') for (const [mx, mz] of [[b.x + 1, b.y + 1], [b.x + b.w - 1, b.y + 1], [b.x + 1, b.y + b.h - 1], [b.x + b.w - 1, b.y + b.h - 1]]) { cyl(.35, .4, h + 6, 10, gm, mx, (h + 6) / 2, mz, shell); cyl(.5, .5, .4, 10, gm, mx, h + 5, mz, shell); }
+          if (b.lm === 'clockdome') { box(1.8, 9, 1.8, wh, b.x + b.w - 2, 4.5 + h * 0, b.y + 2, shell); box(1.3, 1.3, .1, M('#f4f0e0', { emissive: '#f4f0e0', emissiveIntensity: .4 }), b.x + b.w - 2, 7.6, b.y + 1.05, shell); } }
+        if (b.lm === 'tower') { cyl(.9, 1.3, 22, 16, wh, cx, 11, cz, shell); cyl(2.4, 2.2, 1.6, 20, M('#8aa0b0', { metalness: .5 }), cx, 21, cz, shell); cyl(.15, .15, 5, 6, M('#c33'), cx, 24.5, cz, shell); }
+        if (b.lm === 'stadium') { const ring = new THREE.Mesh(new THREE.TorusGeometry(6, 1.2, 8, 32), M('#c9c3b2')); ring.rotation.x = Math.PI / 2; ring.scale.set(1.15, .8, 1); ring.position.set(cx, h + .6, cz); shell.add(ring); box(9, .05, 6, M('#3f8a3a'), cx, h + .05, cz, shell); }
+        if (b.lm === 'arch') { const ar = new THREE.Mesh(new THREE.TorusGeometry(5.5, .6, 10, 32, Math.PI), M('#d8d0bc')); ar.position.set(cx, h, cz); ar.castShadow = true; shell.add(ar); }
+        if (b.lm === 'frieze') { box(b.w - 2, 3.4, .8, M('#e3dccb'), cx, h + 2.6, cz, shell); for (let k = 0; k < 9; k++) box(.6, 1.6 + (k % 3) * .4, .3, M('#2c2c30', { metalness: .6 }), b.x + 2 + k * 1.4, h + 2.8, cz + .5, shell); }
+        if (b.lm === 'refinery') { for (const [dx2, dz2] of [[-4, -3], [0, -3], [4, -3]]) cyl(1.6, 1.6, 3, 16, M('#c9c3b2', { metalness: .4 }), cx + dx2, h + 1.5, cz + dz2, shell); for (const dx2 of [-3, 3]) cyl(.35, .45, 12, 8, M('#5a5550'), cx + dx2, h + 6, cz + 3, shell); }
+        if (b.lm === 'university') { box(2.2, 12, 2.2, wh, cx, 6, cz, shell); box(1.6, 1.6, .1, M('#f4f0e0', { emissive: '#f4f0e0', emissiveIntensity: .4 }), cx, 10.5, cz - 1.15, shell); }
+        if (b.lm === 'shanasheel') { for (let k = 0; k < 6; k++) box(1.8, 1.2, .6, M('#6b4a2a'), b.x + 1.5 + k * 2.4, h - 1.2, b.y + b.h + .2, shell); }
+        if (b.lm === 'hospital2') { const cm = new THREE.MeshStandardMaterial({ color: '#d0312d', emissive: '#d0312d', emissiveIntensity: .5 }); box(3.6, .08, 1, cm, cx, h + .5, cz, shell, true); box(1, .08, 3.6, cm, cx, h + .5, cz, shell, true); }
+        if (b.lm === 'market') { for (let k = 0; k < 5; k++) box(2.4, .1, 2.4, M(['#8a3a2e', '#35587a', '#3d6b4c', '#8f7a3a'][k % 4]), b.x + 2 + k * 3, h + .8, cz, shell); }
+      }
       if (b.type === 'waterplant') { for (const sx of [-1.4, 0, 1.4]) cyl(.55, .55, 1.1, 14, M('#2f6fa8', { metalness: .3 }), cx + sx, h + .55, cz, shell); box(b.w * .7, .08, .08, M('#9aa'), cx, h + 1.2, cz, shell); }
       if (b.type === 'refinery') { cyl(1, 1, 1.6, 16, M('#c9c3b2', { metalness: .4 }), cx - 1, h + .8, cz, shell); cyl(.18, .22, 3.4, 8, M('#5a5550'), cx + 1.6, h + 1.7, cz - .6, shell); box(.9, .5, .9, M('#b03a2e'), cx + .6, h + .25, cz + .8, shell); }
       if (b.fort) { const sm = M('#9a8a62'), fz = b.door === 'S' ? b.y + b.h + .7 : b.y - .7; for (const sx of [-1, 1]) { box(1.7, .55, .55, sm, b.dx + .5 + sx * 1.9, .27, fz, shell); box(1.2, .4, .5, sm, b.dx + .5 + sx * 1.9, .72, fz, shell); } for (let x = b.x + .5; x < b.x + b.w; x += 1.1) { box(.06, 1.3, .06, M('#555'), x, .65, b.y - .35, shell); box(.06, 1.3, .06, M('#555'), x, .65, b.y + b.h + .35, shell); } box(b.w, .04, .04, M('#777'), cx, 1.15, b.y - .35, shell); box(b.w, .04, .04, M('#777'), cx, 1.15, b.y + b.h + .35, shell); }
@@ -95,7 +110,7 @@ const View3D = (() => {
     const P = { stairs: [[.9, .25, .9, '#7a7468', 0, .12, .3], [.9, .5, .6, '#6f695e', 0, .25, .1], [.9, .8, .3, '#645e54', 0, .4, -.2]], fridge: [[.5, 1.15, .5, '#e3e7e9', 0, .58, 0]], cupboard: [[.75, 1, .45, '#7a5230', 0, .5, 0]], shelf: [[.9, .9, .35, '#6d7379', 0, .45, 0], [.8, .12, .3, '#c0392b', 0, .62, 0], [.8, .12, .3, '#e3b62f', 0, .32, 0]], med: [[.8, .95, .35, '#f0f0f0', 0, .48, 0], [.3, .1, .37, '#d0312d', 0, .7, 0]], locker: [[.6, 1.2, .45, '#5a6470', 0, .6, 0]], desk: [[.95, .5, .55, '#6b4a2a', 0, .25, 0], [.3, .2, .25, '#222222', .15, .6, 0]], crate: [[.65, .55, .65, '#9a7442', 0, .28, 0]],
       bed: [[.8, .3, 1.5, '#6b4a2a', 0, .15, 0], [.72, .12, .9, '#a8423a', 0, .36, .25], [.6, .1, .35, '#f4f4f4', 0, .36, -.5]], bench: [[1.1, .55, .6, '#5a4630', 0, .28, 0], [.3, .15, .2, '#888888', -.2, .62, 0]], radio: [[.8, .45, .5, '#5a4630', 0, .22, 0], [.4, .25, .2, '#2a2a2a', 0, .58, 0]], bigen: [[1.6, .9, .8, '#d9a51f', -.3, .45, 0], [.5, .5, .5, '#333333', -.6, 1.1, 0]], pepsi: [[1.1, .5, .8, '#9a7442', 0, .25, 0], [.9, .3, .6, '#1b4fa3', 0, .65, 0], [.9, .08, .6, '#d0312d', 0, .7, 0]] };
     const putProp = (kind, x, z, parent) => { for (const p of P[kind] || P.crate) box(p[0], p[1], p[2], M(p[3]), x + p[4], p[5], z + p[6], parent); };
-    const MI = World.spots._mall, me = bld[MI.b - 1]; me.fl = [0, 1, 2].map(() => { const g = new THREE.Group(); me.inside.add(g); return g; }); MI.floors.forEach((F, i) => F.forEach(o => putProp(o.k, o.tx + .5, o.ty + .5 - (o.k === 'bed' ? .2 : 0), me.fl[i + 1])));
+    const MI = World.spots._mall, me = MI && bld[MI.b - 1]; if (me) me.fl = [0, 1, 2].map(() => { const g = new THREE.Group(); me.inside.add(g); return g; }); if (me) MI.floors.forEach((F, i) => F.forEach(o => putProp(o.k, o.tx + .5, o.ty + .5 - (o.k === 'bed' ? .2 : 0), me.fl[i + 1])));
     const par = (b, all) => { const e = bld[b - 1]; return e.fl && !all ? e.fl[0] : e.inside; };
     for (const c of World.containers) if (c.b) putProp(c.kind, c.x / 16, c.y / 16, par(c.b));
     for (const o of World.inner) putProp(o.k, o.x / 16, o.y / 16 - (o.k === 'bed' ? .2 : 0), par(o.b, o.all));
@@ -126,7 +141,7 @@ const View3D = (() => {
     pads = []; for (const [k, sp, col] of (window.IZ_PADS || [['hm', 'tunHome', '#7fc24b'], ['hm', 'tunMall', '#7fc24b'], ['mp', 'brMall', '#6cc4ff'], ['mp', 'brPharm', '#6cc4ff'], ['ma', 'tunMall2', '#e3b62f'], ['ma', 'tunArm', '#e3b62f']])) { const e = World.spots[sp]; if (!e) continue; const g = new THREE.Group(); box(.86, .05, .86, M('#1c1c20'), 0, .03, 0, g, true); box(.6, .04, .6, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4 }), 0, .07, 0, g, true); g.position.set(e.x / 16, 0, e.y / 16); g.visible = false; scene.add(g); pads.push({ k, g, b: World.bAt(e.x >> 4, e.y >> 4) }); }
     beam = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, 16, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd966, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide })); beam.visible = false; scene.add(beam);
     flash = new THREE.PointLight(0xfff0d0, 0, 11, 1.4); mallL = new THREE.PointLight(0xfff2d8, 0, 18, 1.2); homeL = new THREE.PointLight(0xffe2b0, 0, 12, 1.2); scene.add(flash, mallL, homeL);
-    mallL.position.set(World.spots.mall.x / 16, 3, World.spots.mall.y / 16); homeL.position.set(World.spots.home.x / 16, 2.4, World.spots.home.y / 16);
+    if (World.spots.mall) mallL.position.set(World.spots.mall.x / 16, 3, World.spots.mall.y / 16); if (World.spots.home) homeL.position.set(World.spots.home.x / 16, 2.4, World.spots.home.y / 16);
   }
   function palm(x, z) { const g = new THREE.Group(), th = rr(3.2, 4.6); cyl(.13, .2, th, 7, M('#6e5334'), 0, th / 2, 0, g);
     const fm = M('#4c6b34', { side: THREE.DoubleSide }); for (let i = 0; i < 11; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(.42, 2.1, 1, 4), fm), pos = f.geometry.attributes.position; for (let v = 0; v < pos.count; v++) { const yy = pos.getY(v) + 1.05; pos.setZ(v, -yy * yy * .22); pos.setX(v, pos.getX(v) * (1 - yy / 2.6)); } f.geometry.computeVertexNormals(); const p = new THREE.Group(); f.position.y = 1.05; f.rotation.x = rr(.9, 1.35); p.add(f); p.rotation.y = i * 6.283 / 11 + rr(-.2, .2); p.position.y = th; f.castShadow = true; g.add(p); }
@@ -198,7 +213,7 @@ const View3D = (() => {
       for (const [k2, f] of figs) if (f.o && f.o.model === key) { scene.remove(f.g); figs.delete(k2); }
     } catch (e) { console.error('model ' + key, e); }
   }
-  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 }, C06: { shX: .15 }, Z01: { shX: .14 }, Z02: { shX: .16, legAmp: .5 }, Z05: { shX: .2, legAmp: .6 }, Z04: { shX: .18, legAmp: .7 }, Z06: { shX: .15 }, Z07: { shX: .19, legAmp: .45 }, Z08: { shX: .18 }, Z10: { shX: .17, legAmp: .45 } };
+  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 }, C06: { shX: .15 }, Z01: { shX: .14 }, Z02: { shX: .16, legAmp: .5 }, Z05: { shX: .2, legAmp: .6 }, Z04: { shX: .18, legAmp: .7 }, Z06: { shX: .15 }, Z07: { shX: .19, legAmp: .45 }, Z08: { shX: .18 }, Z10: { shX: .17, legAmp: .45 }, Z09: { shX: .19 } };
   function mkModelFig(o) {
     const T = MODELS[o.model], g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const bones = T.joints.map(() => new THREE.Bone());
@@ -288,7 +303,7 @@ const View3D = (() => {
     const pb = play ? (R.pb || 0) : 0, see = e => { const b = World.bAt(e.x >> 4, e.y >> 4); return b === 0 || b === pb; };
     const fl = play ? (G.floor || 0) : 0;
     for (let i = 0; i < bld.length; i++) { const ins = i + 1 === pb, e = bld[i]; e.shell.visible = !ins; e.inside.visible = ins; if (e.fl) for (let f = 0; f < 3; f++) e.fl[f].visible = f === fl; }
-    bridgeG.visible = play && !!G.links.mp; for (const p of pads) p.g.visible = play && !!G.links[p.k] && fl === 0 && (p.b === 0 || p.b === pb);
+    bridgeG.visible = play && !!G.links.mp && (G.map || 'home') === 'home'; for (const p of pads) p.g.visible = play && !!G.links[p.k] && fl === 0 && (p.b === 0 || p.b === pb);
     for (const k in gates) gates[k].visible = !World.gates[k].open;
     for (const f of figs.values()) f.used = false;
     for (const z of R.act) upd(z, () => mkFig(z.look), z.x, z.y, dt, { z: 1, fall: z.fall > 0, hide: !see(z), scale: z.type === 'boss' ? 2 : z.type === 'giant' ? 1.6 : z.type === 'ali' ? 1 : 0 });
@@ -298,7 +313,7 @@ const View3D = (() => {
       for (const n of R.npcs) { const f = upd(n, () => n.id === 'cat' ? mkCat() : mkFig(LOOK[n.id] || LOOK.sv0), n.x, n.y, dt, { hide: n.hidden || !see(n) || fl > 0, work: n.work, fall: n.lie, face: n.face }); carry(f, n.carry && n.carry[0]); setWep(f, n.gun || ''); }
       for (const p of (R.patients || [])) upd(p, () => mkFig(p.look), p.x, p.y, dt, { fall: true, hide: !see(p) || fl > 0 });
       const pf = upd(G, () => mkFig(LOOK.player), G.x, G.y, dt, { hide: G.inVeh >= 0 || (R.inv > 0 && Math.floor(t * 20) % 2 === 1), face: (R.atk > 0 || R.mouse.t > 0) ? Math.PI / 2 - R.aim : null, swing: R.swing > 0 ? R.swing : 0 }); setWep(pf, G.cur);
-      G.veh.forEach((v, i) => { const key = v.t + (v.up.armor ? 1 : 0); let o = vehs[i]; if (!o || o.key !== key) { if (o) scene.remove(o.g); o = vehs[i] = { key, g: car(v.t, v.up.armor) }; scene.add(o.g); } o.g.visible = !v.gone; o.g.position.set(v.x / 16, 0, v.y / 16); o.g.rotation.y = -v.a; });
+      G.veh.forEach((v, i) => { const key = v.t + (v.up.armor ? 1 : 0); let o = vehs[i]; if (!o || o.key !== key) { if (o) scene.remove(o.g); o = vehs[i] = { key, g: car(v.t, v.up.armor) }; scene.add(o.g); } o.g.visible = !v.gone && (v.map || 'home') === (G.map || 'home'); o.g.position.set(v.x / 16, 0, v.y / 16); o.g.rotation.y = -v.a; });
       for (const p of picks) { p.g.visible = !G.taken[p.p.id] && (!p.p.b || p.p.b === pb); p.g.position.y = .45 + Math.sin(t * 3 + p.p.x) * .08; p.g.rotation.y = t * 1.5; }
     } else { for (const v of vehs) if (v) v.g.visible = false; for (const p of picks) p.g.visible = false; }
     // cinematic extras (intro time-lapse): civilians and moving cars

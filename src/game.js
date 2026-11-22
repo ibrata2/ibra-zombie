@@ -318,7 +318,7 @@ function lockAct(k, key) {
 }
 
 // ---------------------------------------------------------------- zombies
-const ZL = {}, ZMODEL = { normal: 'Z01', vendor: 'Z02', fat: 'Z05', gen: 'Z04', soldier: 'Z06' };
+const ZL = {}, ZMODEL = { normal: 'Z01', vendor: 'Z02', fat: 'Z05', gen: 'Z04', soldier: 'Z06', hassan: 'Z07', colonel: 'Z08' };
 function zlook(type, v) {
   const k = type + v; if (ZL[k]) return ZL[k];
   const o = { id: 'z' + k, z: 1, skin: ['#8fae7a', '#7fa08a', '#9ab07a'][v % 3], shirt: ['#7a4a4a', '#4a5d7a', '#6a6a55', '#5a4a6a', '#8a7a4a', '#3f5f4f'][v % 6], pants: ['#33373f', '#4a4033', '#2f3a33'][v % 3], hair: '#22201a' };

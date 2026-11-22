@@ -182,7 +182,7 @@ const View3D = (() => {
       for (const [k2, f] of figs) if (f.o && f.o.model === key) { scene.remove(f.g); figs.delete(k2); }
     } catch (e) { console.error('model ' + key, e); }
   }
-  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 }, C06: { shX: .15 }, Z01: { shX: .14 }, Z02: { shX: .16, legAmp: .5 }, Z05: { shX: .2, legAmp: .6 }, Z04: { shX: .18, legAmp: .7 }, Z06: { shX: .15 } };
+  const MODEL_FLIP = {}, MODEL_P = { C02: { shX: .17, legAmp: .45 }, C03: { shX: .13, legAmp: .6 }, C04: { shX: .15 }, C05: { shX: .14 }, C06: { shX: .15 }, Z01: { shX: .14 }, Z02: { shX: .16, legAmp: .5 }, Z05: { shX: .2, legAmp: .6 }, Z04: { shX: .18, legAmp: .7 }, Z06: { shX: .15 }, Z07: { shX: .19, legAmp: .45 }, Z08: { shX: .18 } };
   function mkModelFig(o) {
     const T = MODELS[o.model], g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const bones = T.joints.map(() => new THREE.Bone());

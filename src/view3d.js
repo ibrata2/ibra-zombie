@@ -147,7 +147,50 @@ const View3D = (() => {
   }
 
   // ------------------------------------------------------------ characters (procedural; replaced by GLB models when supplied)
+  // ------------------------------------------------------------ GLB characters (auto-rigged in code)
+  const MODELS = {}, MODEL_H = 1.15;
+  async function loadModel(key) {
+    if (MODELS[key] !== undefined || !THREE.GLTFLoader) return; MODELS[key] = null;
+    try {
+      let buf = null;
+      if (window.ibra && window.ibra.model) { const b = await window.ibra.model(key); if (b) buf = b.buffer ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : b; }
+      else { const r = await fetch('models/' + key + '.glb'); if (r.ok) buf = await r.arrayBuffer(); }
+      if (!buf) return;
+      const gltf = await new Promise((res, rej) => new THREE.GLTFLoader().parse(buf, '', res, rej));
+      let mesh = null; gltf.scene.updateMatrixWorld(true); gltf.scene.traverse(o => { if (o.isMesh && !mesh) mesh = o; }); if (!mesh) return;
+      const geo = mesh.geometry.clone(); geo.applyMatrix4(mesh.matrixWorld); geo.computeBoundingBox();
+      const bb = geo.boundingBox, h = bb.max.y - bb.min.y, k = MODEL_H / h; geo.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2); geo.scale(k, k, k);
+      if (MODEL_FLIP[key]) geo.rotateY(Math.PI);
+      const H = MODEL_H, hipY = .52 * H, shY = .80 * H, shX = .115 * H, armTop = .86 * H, armBot = .40 * H, pos = geo.attributes.position, n = pos.count;
+      const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+      // bones: 0 root, 1 hips, 2 legL(+x), 3 legR(-x), 4 spine, 5 armL(+x), 6 armR(-x)
+      for (let i = 0; i < n; i++) {
+        const x = pos.getX(i), y = pos.getY(i), w = new Float32Array(7);
+        const arm = ss(shX * .82, shX * 1.12, Math.abs(x)) * (y > armBot && y < armTop ? 1 : 0), leg = 1 - ss(hipY - .08 * H, hipY + .02 * H, y), side = x >= 0;
+        if (arm > 0) { w[side ? 5 : 6] = arm; w[4] = 1 - arm; }
+        else if (leg > 0) { const c = ss(0, .035 * H, Math.abs(x)); w[side ? 2 : 3] = leg * (.5 + .5 * c); w[side ? 3 : 2] = leg * (.5 - .5 * c); w[1] = 1 - leg; }
+        else { const sp = ss(hipY, hipY + .1 * H, y); w[4] = sp; w[1] = 1 - sp; }
+        const idx = [...w.keys()].sort((a, b) => w[b] - w[a]).slice(0, 4); let tot = 0; for (const j of idx) tot += w[j];
+        idx.forEach((j, q) => { si[i * 4 + q] = j; sw[i * 4 + q] = tot ? w[j] / tot : (q ? 0 : 1); });
+      }
+      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+      const mat = mesh.material; mat.side = THREE.FrontSide;
+      MODELS[key] = { geo, mat, joints: [[0, 0, 0, -1], [0, hipY, 0, 0], [shX * .55, hipY - .02 * H, 0, 1], [-shX * .55, hipY - .02 * H, 0, 1], [0, hipY + .12 * H, 0, 1], [shX, shY, 0, 4], [-shX, shY, 0, 4]], hand: [.2 * H, .44 * H] };
+      for (const [k2, f] of figs) if (f.o && f.o.model === key) { scene.remove(f.g); figs.delete(k2); }
+    } catch (e) { console.error('model ' + key, e); }
+  }
+  const MODEL_FLIP = {};
+  function mkModelFig(o) {
+    const T = MODELS[o.model], g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const bones = T.joints.map(() => new THREE.Bone());
+    T.joints.forEach((j, i) => { const p = j[3]; if (p < 0) bones[i].position.set(j[0], j[1], j[2]); else { const q = T.joints[p]; bones[i].position.set(j[0] - q[0], j[1] - q[1], j[2] - q[2]); bones[p].add(bones[i]); } });
+    const sm = new THREE.SkinnedMesh(T.geo, T.mat); sm.add(bones[0]); bones[0].updateMatrixWorld(true); sm.bind(new THREE.Skeleton(bones)); bones[5].rotation.z = -.24; bones[6].rotation.z = .24; sm.castShadow = true; sm.receiveShadow = true; sm.frustumCulled = false; body.add(sm);
+    const wep = new THREE.Group(); wep.position.set(T.hand[0] - T.joints[5][0], T.hand[1] - T.joints[5][1], .05); bones[5].add(wep);
+    return { g, body, legs: [bones[2], bones[3]], arms: [bones[6], bones[5]], wep, ph: rnd() * 6, ang: 0, lx: null, lz: null, o, model: true };
+  }
   function mkFig(o) {
+    if (o.model && MODELS[o.model]) return mkModelFig(o);
+    if (o.model) loadModel(o.model);
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body); const s = o.fat ? 1.3 : 1, sm = M(o.skin || '#c99870'), cm = M(o.robe || o.shirt || '#3b6ea5'), pm = M(o.pants || '#2c2f36'), hm = M(o.hair || '#1b1410');
     const legs = [], arms = []; for (const sx of [-.085, .085]) { const p = new THREE.Group(); p.position.set(sx * s, .44, 0); box(.14 * s, .44, .16, o.robe ? cm : pm, 0, -.22, 0, p); box(.15 * s, .07, .22, M('#1c1c1c'), 0, -.42, .03, p); legs.push(p); body.add(p); }
     if (o.robe) box(.4 * s, .72, .26 * s, cm, 0, .5, 0, body); else box(.38 * s, .44, .22 * s, cm, 0, .65, 0, body);

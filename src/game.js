@@ -58,7 +58,7 @@ const CLV = [[0, ['ملجأ', 'Shelter'], -1], [4, ['نقطة ناجين', 'Surv
 const colLevel = () => { let l = 0; for (let i = 0; i < CLV.length; i++) if (G.col.pop >= CLV[i][0]) l = i; return l; };
 const secured = zn => { const l = colLevel(); for (let i = 1; i <= l; i++) if (CLV[i][2] === zn) return true; return false; };
 const LOOK = {
-  player: { id: 'pl', shirt: '#c9a84c', pants: '#2a2f3a', hair: '#17110d' },
+  player: { id: 'pl', model: 'C01', shirt: '#c9a84c', pants: '#2a2f3a', hair: '#17110d' },
   aj: { id: 'aj', robe: '#e9e4d6', shirt: '#e9e4d6', hat: 'shemagh', hatc: '#ececec', beard: 1, hair: '#666', fat: 1 },
   noor: { id: 'no', shirt: '#f4f4f4', pants: '#3a5a8a', hat: 'hijab', hatc: '#8e3b5e' },
   mur: { id: 'mu', shirt: '#3d5a80', pants: '#333', hair: '#111', stache: 1, hat: 'cap', hatc: '#c33' },
@@ -1076,7 +1076,7 @@ function update(dt) {
   if (R.shake > 0) R.shake -= dt;
   if (R.mode === 'intro') { updLapse(dt); return; }
   if (R.mode === 'title') { R.panT += dt; G.x = 360 + ((R.panT * 16) % 2300); G.y = 55 * 16 + Math.sin(R.panT * .15) * 50; R.cam.x = G.x; R.cam.y = G.y; R.cam.z += (3 - R.cam.z) * .1; updZombies(dt, true); return; }
-  const zt = clamp(G.zoom - (G.inVeh >= 0 && G.veh[G.inVeh].t !== 'bike' ? 1 : 0), 2, 5); R.cam.z += (zt - R.cam.z) * Math.min(1, dt * 9); if (Math.abs(zt - R.cam.z) < .02) R.cam.z = zt;
+  const zt = clamp(G.zoom - (G.inVeh >= 0 && G.veh[G.inVeh].t !== 'bike' ? 1 : 0), 2, 8); R.cam.z += (zt - R.cam.z) * Math.min(1, dt * 9); if (Math.abs(zt - R.cam.z) < .02) R.cam.z = zt;
   R.cam.x += (G.x - R.cam.x) * Math.min(1, dt * 7); R.cam.y += (G.y - R.cam.y) * Math.min(1, dt * 7);
   if (R.busy > 0) return;
   if (R.atk > 0) R.atk -= dt; if (R.swing > 0) R.swing -= dt; if (R.inv > 0) R.inv -= dt; if (R.mouse.t > 0) R.mouse.t -= dt;
@@ -1282,7 +1282,7 @@ cv.addEventListener('mousemove', e => { R.mouse.x = e.clientX; R.mouse.y = e.cli
 cv.addEventListener('mousedown', e => { if (R.mode === 'intro' && R.lapse) return R.lapse.finish(); if (e.button === 0) R.mouse.l = true; if (e.button === 2) R.mouse.r = true; R.mouse.x = e.clientX; R.mouse.y = e.clientY; R.mouse.t = 2.5; });
 addEventListener('mouseup', e => { if (e.button === 0) R.mouse.l = false; if (e.button === 2) R.mouse.r = false; });
 addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { if (R.mode === 'play' && R.busy === 0) G.zoom = clamp(G.zoom - Math.sign(e.deltaY), 2, 5); }, { passive: true });
+addEventListener('wheel', e => { if (R.mode === 'play' && R.busy === 0) G.zoom = clamp(G.zoom - Math.sign(e.deltaY), 2, 8); }, { passive: true });
 function resize() { cv.width = innerWidth; cv.height = innerHeight; View3D.resize(); }
 addEventListener('resize', resize);
 addEventListener('beforeunload', () => { if (R.mode === 'play' && R.busy === 0 && G.hp > 0) { try { save(true); } catch (e) { /* ignore */ } } });

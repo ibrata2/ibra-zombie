@@ -23,6 +23,7 @@ function create() {
 ipcMain.on('ver', e => { e.returnValue = app.getVersion(); });
 ipcMain.on('quit', () => app.quit());
 ipcMain.on('fs', () => { if (win) win.setFullScreen(!win.isFullScreen()); });
+ipcMain.handle('model', (e, name) => { const n = String(name).replace(/[^A-Za-z0-9_-]/g, ''); try { return require('fs').readFileSync(path.join(__dirname, 'src', 'models', n + '.glb')); } catch (err) { return null; } });
 ipcMain.on('open', (e, url) => { if (/^https:\/\//.test(String(url))) shell.openExternal(url); });
 
 app.whenReady().then(create);

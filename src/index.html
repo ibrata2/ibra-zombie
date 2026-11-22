@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://api.github.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob: data: https://api.github.com">
 <title>IBRA ZOMBIE</title>
 <style>
 @font-face{font-family:Handjet;font-weight:400;src:url(fonts/handjet-arabic-400-normal.woff2) format('woff2');unicode-range:U+0600-06FF,U+0750-077F,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F}
@@ -144,6 +144,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold)}
 <script src="art.js"></script>
 <script src="world.js"></script>
 <script src="vendor/three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
 <script src="view3d.js"></script>
 <script src="game.js"></script>
 </body>

@@ -2,7 +2,7 @@
 // برمجة وتطوير ابراهيم الخزرجي
 'use strict';
 (() => {
-const VERSION = (window.ibra && window.ibra.version) || '1.0.0', REPO = 'ibrata2/ibra-zombie', T = 16;
+const VERSION = (window.ibra && window.ibra.version) || window.IZ_VERSION || '1.0.0', REPO = 'ibrata2/ibra-zombie', T = 16;
 const $ = s => document.querySelector(s);
 let LANG = localStorage.getItem('ibz_lang') || 'ar';
 const tr = (a, e) => LANG === 'ar' ? a : e, L = p => Array.isArray(p) ? p[LANG === 'ar' ? 0 : 1] : p;
@@ -444,6 +444,7 @@ function attack() {
 }
 function updPlayer(dt) {
   const k = R.keys; let ix = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0), iy = (k.KeyS || k.ArrowDown ? 1 : 0) - (k.KeyW || k.ArrowUp ? 1 : 0);
+  if (R.joy && (R.joy.x || R.joy.y)) { ix += R.joy.x; iy += R.joy.y; }
   { const wv = View3D.toWorld(ix, iy); ix = wv[0]; iy = wv[1]; }
   const pk = View3D.pick(R.mouse.x, R.mouse.y), wx = pk.x, wy = pk.y;
   if (R.mouse.r) { const dx = wx - G.x, dy = wy - G.y, d = hyp(dx, dy); if (d > 6) { ix = dx / d; iy = dy / d; } }
@@ -1296,7 +1297,7 @@ async function checkUpdate(manual) {
     const r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest', { cache: 'no-store' }); if (!r.ok) throw 0;
     const j = await r.json(), v = String(j.tag_name || '').replace(/^v/, '');
     if (v && cmpVer(v, VERSION) > 0) {
-      const a = (j.assets || []).find(x => /\.exe$/i.test(x.name)), url = a ? a.browser_download_url : j.html_url, u = $('#upd'); u.innerHTML = ''; u.hidden = false;
+      const ext = /android/i.test(navigator.userAgent) ? 'apk' : /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ipa' : 'exe', a = (j.assets || []).find(x => x.name.toLowerCase().endsWith('.' + ext)), url = a ? a.browser_download_url : j.html_url, u = $('#upd'); u.innerHTML = ''; u.hidden = false;
       u.append(el('span', tr('نزلت نسخة جديدة v' + v + ' (نسختك v' + VERSION + ')', 'New version v' + v + ' is out (you have v' + VERSION + ')')), btn(tr('حمّل التحديث', 'Download update'), () => window.ibra ? window.ibra.open(url) : window.open(url), 'gold'), btn(tr('بعدين', 'Later'), () => u.hidden = true));
     } else if (manual) toast(tr('نسختك آخر إصدار ✓', 'You have the latest version ✓'));
   } catch (e) { if (manual) toast(tr('ما كدرت أفحص التحديثات. تأكد من النت.', "Couldn't check for updates. Check your connection.")); }
@@ -1863,8 +1864,41 @@ async function travelTo(id) {
   save(true);
 }
 
+// ---------------------------------------------------------------- phones & tablets: on-screen joystick and buttons
+const TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0 && matchMedia('(pointer: coarse)').matches);
+function touchUI() {
+  if (!TOUCH) return; document.body.classList.add('touch'); R.joy = { x: 0, y: 0 };
+  const ui = el('div'); ui.id = 'tui'; document.body.appendChild(ui);
+  const pad = el('div', null, 'tpad'), knob = el('div', null, 'tknob'); pad.appendChild(knob); ui.appendChild(pad);
+  let jid = null, cx = 0, cy = 0; const RAD = 60;
+  const jm = t => { let dx = t.clientX - cx, dy = t.clientY - cy; const d = Math.hypot(dx, dy); if (d > RAD) { dx = dx / d * RAD; dy = dy / d * RAD; } knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; R.joy.x = dx / RAD; R.joy.y = dy / RAD; R.keys.ShiftLeft = d > RAD * .92; };
+  pad.addEventListener('touchstart', e => { e.preventDefault(); const t = e.changedTouches[0], r = pad.getBoundingClientRect(); jid = t.identifier; cx = r.left + r.width / 2; cy = r.top + r.height / 2; jm(t); }, { passive: false });
+  pad.addEventListener('touchmove', e => { e.preventDefault(); for (const t of e.changedTouches) if (t.identifier === jid) jm(t); }, { passive: false });
+  const jend = e => { for (const t of e.changedTouches) if (t.identifier === jid) { jid = null; R.joy.x = R.joy.y = 0; R.keys.ShiftLeft = false; knob.style.transform = ''; } };
+  pad.addEventListener('touchend', jend); pad.addEventListener('touchcancel', jend);
+  const key = (code, down) => dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, key: code, bubbles: true }));
+  const aimNearest = () => { let b = null, bd = 260; for (const z of R.zombies) { const d = hyp(z.x - G.x, z.y - G.y); if (d < bd) { bd = d; b = z; } } if (b) { const p = View3D.project(b.x, b.y, .6); R.mouse.x = p.x; R.mouse.y = p.y; R.mouse.t = .4; } };
+  const B = (cls, label, down, up) => { const b = el('div', label, 'tbtn ' + cls); b.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); b.classList.add('on'); down(); }, { passive: false }); const u = e => { e.preventDefault(); b.classList.remove('on'); if (up) up(); }; b.addEventListener('touchend', u); b.addEventListener('touchcancel', u); ui.appendChild(b); return b; };
+  let atkT = null;
+  B('t-atk', '⚔', () => { aimNearest(); R.mouse.l = true; atkT = setInterval(aimNearest, 120); }, () => { R.mouse.l = false; clearInterval(atkT); });
+  B('t-e', 'E', () => key('KeyE', true), () => key('KeyE', false));
+  B('t-f', '🍞', () => key('KeyF', true), () => key('KeyF', false));
+  B('t-q', '🔁', () => key('KeyQ', true), () => key('KeyQ', false));
+  B('t-h', '📯', () => key('KeyH', true), () => key('KeyH', false));
+  B('t-i', '🎒', () => key('KeyI', true), () => key('KeyI', false));
+  B('t-m', '🗺', () => key('KeyM', true), () => key('KeyM', false));
+  B('t-k', '👥', () => key('KeyK', true), () => key('KeyK', false));
+  B('t-p', '⏸', () => key('Escape', true), () => key('Escape', false));
+  B('t-zi', '＋', () => { if (G) G.zoom = clamp(G.zoom + 1, 2, 8); });
+  B('t-zo', '－', () => { if (G) G.zoom = clamp(G.zoom - 1, 2, 8); });
+  // pinch to zoom on the game view
+  let pd = 0; cv.addEventListener('touchstart', e => { if (e.touches.length === 2) pd = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); else if (R.mode === 'intro' && R.lapse) R.lapse.finish(); }, { passive: true });
+  cv.addEventListener('touchmove', e => { if (e.touches.length !== 2 || !G || R.mode !== 'play') return; const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); if (Math.abs(d - pd) > 40) { G.zoom = clamp(G.zoom + (d > pd ? 1 : -1), 2, 8); pd = d; } }, { passive: true });
+  const show = () => { ui.style.display = R.mode === 'play' ? '' : 'none'; requestAnimationFrame(show); }; show();
+}
+
 Object.assign(JOBS, JOBX);
-View3D.init($('#gl')); resize(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); renderMenu(); requestAnimationFrame(loop);
+View3D.init($('#gl')); resize(); touchUI(); World.gen(); View3D.build(); G = blank(''); G.time = 7.5; spawnAll(); renderMenu(); requestAnimationFrame(loop);
 setTimeout(() => checkUpdate(false), 1500);
 window.__izFast = () => setInterval(() => { try { update(1 / 60); } catch (e) { console.error(e); } }, 16);
 window.__iz = { travelTo, baghdadMap, distDay, dropLoot, invPanel, lifeTick, lifeDay, spawnGiant, fortify, rebuildWorld, newMission, jobOfL, autoAssign, op, startRaid, update, updComps, findNear, hud, LOOK, zlook, syncNpcs, updWorkers, jobOf, findPath, startRaid, endRaid, convert, hospMenu, strandDay, stairsMenu, stashPanel, applyFloor, colCap, baseMenu, travel, facDay, colonyPanel, colonyDay, colLevel, get G() { return G; }, R, World, S, startNew, loadGame, add, join, openGate, SC, nextDay, hud, invPanel, introLapse, mapPanel, aboutPanel, pauseMenu, setLang, notebook, say, enterVeh, VEH, mkZ, toTitle, closePanel, die };

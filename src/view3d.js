@@ -49,7 +49,7 @@ const View3D = (() => {
   // ------------------------------------------------------------ init
   function init(canvas) {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(innerWidth, innerHeight, false);
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, window.matchMedia && matchMedia('(pointer: coarse)').matches ? 1.35 : 2)); renderer.setSize(innerWidth, innerHeight, false);
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping;
     cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 420);
   }
@@ -139,7 +139,7 @@ const View3D = (() => {
     { const pts = []; for (const w of World.wires) { const a = new THREE.Vector3(w[0] / 16, 3.9, w[1] / 16 + .6), b = new THREE.Vector3(w[2] / 16, 3.4, w[3] / 16), m = a.clone().lerp(b, .5); m.y -= w[4] / 14; let prev = a; for (let i = 1; i <= 8; i++) { const tt = i / 8, p = a.clone().multiplyScalar((1 - tt) * (1 - tt)).add(m.clone().multiplyScalar(2 * (1 - tt) * tt)).add(b.clone().multiplyScalar(tt * tt)); pts.push(prev, p); prev = p; } } scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x111111, transparent: true, opacity: .8 }))); }
     for (const p of World.pickups) { const g = new THREE.Group(); if (p.page != null) box(.3, .02, .4, new THREE.MeshStandardMaterial({ color: '#f3ecd2', emissive: '#f3ecd2', emissiveIntensity: .4 }), 0, 0, 0, g); else box(.75, .08, .1, new THREE.MeshStandardMaterial({ color: p.w === 'pipe' ? '#aab0b6' : p.w === 'cleaver' ? '#d0d5da' : '#8a6a40', metalness: .6, roughness: .4, emissive: '#554400', emissiveIntensity: .5 }), 0, 0, 0, g); g.position.set(p.x / 16, .4, p.y / 16); scene.add(g); picks.push({ p, g }); }
     // lights
-    sun = new THREE.DirectionalLight(0xffffff, 1); sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; hemi = new THREE.HemisphereLight(0xbcd0e6, 0x8a7a5a, .5); scene.add(sun, sun.target, hemi);
+    sun = new THREE.DirectionalLight(0xffffff, 1); sun.castShadow = true; { const mob = window.matchMedia && matchMedia('(pointer: coarse)').matches; sun.shadow.mapSize.set(mob ? 2048 : 4096, mob ? 2048 : 4096); } sun.shadow.bias = -.0006; sun.shadow.normalBias = .03; hemi = new THREE.HemisphereLight(0xbcd0e6, 0x8a7a5a, .5); scene.add(sun, sun.target, hemi);
     for (let i = 0; i < 5; i++) { const l = new THREE.SpotLight(0xffe2b0, 0, 16, .95, .7, 1.2); l.castShadow = i < 2; l.shadow.mapSize.set(1024, 1024); scene.add(l, l.target); lampLights.push(l); }
     // skybridge mall <-> pharmacy, and glowing pads at passage entrances
     bridgeG = new THREE.Group(); { const m = M('#6f7480', { metalness: .4, roughness: .6 }), x = 123.5; box(1.1, .12, 6.6, m, x, 1.95, 56, bridgeG); for (const sx of [-.55, .55]) { box(.06, .55, 6.6, m, x + sx, 2.25, 56, bridgeG); } for (const z of [53.4, 58.6]) for (const sx of [-.45, .45]) box(.12, 1.9, .12, m, x + sx, .95, z, bridgeG); for (let z = 53.2; z < 59; z += .8) box(1.1, .02, .06, M('#e3b62f'), x, 2.02, z, bridgeG, true); } bridgeG.visible = false; scene.add(bridgeG);

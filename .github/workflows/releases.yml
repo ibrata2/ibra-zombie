@@ -13,6 +13,7 @@ jobs:
     outputs:
       todo: ${{ steps.p.outputs.todo }}
       latest: ${{ steps.p.outputs.latest }}
+      latest_new: ${{ steps.p.outputs.latest_new }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -26,6 +27,7 @@ jobs:
           todo=$(for t in $(echo "$tags" | sort -uV); do echo "$have" | grep -qx "$t" || echo "$t"; done | jq -R . | jq -sc .)
           echo "todo=$todo" >> "$GITHUB_OUTPUT"
           echo "latest=$(echo "$tags" | sort -uV | tail -1)" >> "$GITHUB_OUTPUT"
+          L=$(echo "$tags" | sort -uV | tail -1); echo "$todo" | grep -q "\"$L\"" && echo "latest_new=true" >> "$GITHUB_OUTPUT" || echo "latest_new=false" >> "$GITHUB_OUTPUT"
           echo "to build: $todo"
   build:
     needs: plan
@@ -58,3 +60,56 @@ jobs:
           حمّل IBRA-ZOMBIE-Setup-$V.exe وثبّته على ويندوز.
 
           $NOTES" --target '${{ steps.ref.outputs.sha }}' --latest=$LATEST
+
+  android:
+    needs: [plan, build]
+    if: always() && needs.plan.outputs.latest_new == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Build APK
+        run: |
+          V=$(jq -r .version package.json); echo "V=$V" >> "$GITHUB_ENV"; echo "window.IZ_VERSION = '$V';" > src/version.js
+          mkdir mob && cd mob && npm init -y >/dev/null && npm i -s @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          cp -r ../src www
+          echo '{"appId":"com.ibraprogram.ibrazombie","appName":"IBRA ZOMBIE","webDir":"www"}' > capacitor.config.json
+          npx cap add android
+          M=android/app/src/main/AndroidManifest.xml; sed -i 's/<activity/<activity android:screenOrientation="sensorLandscape"/' $M
+          S=android/app/src/main/res/values/styles.xml; sed -i 's#\(<style name="AppTheme.NoActionBar"[^>]*>\)#\1<item name="android:windowFullscreen">true</item>#' $S
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          for f in android/app/src/main/res/mipmap-*/ic_launcher*.png; do sz=$(identify -format '%w' "$f"); convert ../build/icon.png -resize ${sz}x${sz} "$f"; done
+          npx cap sync android
+          cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon -q
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/IBRA-ZOMBIE-$V.apk"
+      - name: Upload APK
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh release upload "v$V" "IBRA-ZOMBIE-$V.apk" -R "$GITHUB_REPOSITORY" --clobber
+  ios:
+    needs: [plan, build]
+    if: always() && needs.plan.outputs.latest_new == 'true'
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Build IPA (unsigned, sign it on the phone)
+        run: |
+          V=$(jq -r .version package.json); echo "V=$V" >> "$GITHUB_ENV"; echo "window.IZ_VERSION = '$V';" > src/version.js
+          mkdir mob && cd mob && npm init -y >/dev/null && npm i -s @capacitor/core@6 @capacitor/cli@6 @capacitor/ios@6
+          cp -r ../src www
+          echo '{"appId":"com.ibraprogram.ibrazombie","appName":"IBRA ZOMBIE","webDir":"www"}' > capacitor.config.json
+          npx cap add ios
+          P=ios/App/App/Info.plist; PB=/usr/libexec/PlistBuddy
+          for k in UISupportedInterfaceOrientations "UISupportedInterfaceOrientations~ipad"; do $PB -c "Delete :$k" $P || true; $PB -c "Add :$k array" $P; $PB -c "Add :$k:0 string UIInterfaceOrientationLandscapeLeft" $P; $PB -c "Add :$k:1 string UIInterfaceOrientationLandscapeRight" $P; done
+          $PB -c "Add :UIRequiresFullScreen bool true" $P || true; $PB -c "Add :UIStatusBarHidden bool true" $P || true; $PB -c "Add :UIViewControllerBasedStatusBarAppearance bool false" $P || true
+          for f in ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png; do sz=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}'); sips -s format png -z $sz $sz ../build/icon.png --out "$f" >/dev/null; done
+          npx cap sync ios
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build -quiet
+          mkdir Payload && cp -R build/Build/Products/Release-iphoneos/App.app Payload/ && zip -qry "$GITHUB_WORKSPACE/IBRA-ZOMBIE-$V.ipa" Payload
+      - name: Upload IPA
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh release upload "v$V" "IBRA-ZOMBIE-$V.ipa" -R "$GITHUB_REPOSITORY" --clobber

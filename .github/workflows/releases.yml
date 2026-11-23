@@ -27,7 +27,8 @@ jobs:
           todo=$(for t in $(echo "$tags" | sort -uV); do echo "$have" | grep -qx "$t" || echo "$t"; done | jq -R . | jq -sc .)
           echo "todo=$todo" >> "$GITHUB_OUTPUT"
           echo "latest=$(echo "$tags" | sort -uV | tail -1)" >> "$GITHUB_OUTPUT"
-          L=$(echo "$tags" | sort -uV | tail -1); echo "$todo" | grep -q "\"$L\"" && echo "latest_new=true" >> "$GITHUB_OUTPUT" || echo "latest_new=false" >> "$GITHUB_OUTPUT"
+          L=$(echo "$tags" | sort -uV | tail -1); A=$(gh release view "$L" -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' 2>/dev/null || true)
+          if echo "$todo" | grep -q "\"$L\"" || ! echo "$A" | grep -q '\.apk$' || ! echo "$A" | grep -q '\.ipa$'; then echo "latest_new=true" >> "$GITHUB_OUTPUT"; else echo "latest_new=false" >> "$GITHUB_OUTPUT"; fi
           echo "to build: $todo"
   build:
     needs: plan
@@ -73,6 +74,7 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - name: Build APK
         run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
           V=$(jq -r .version package.json); echo "V=$V" >> "$GITHUB_ENV"; echo "window.IZ_VERSION = '$V';" > src/version.js
           mkdir mob && cd mob && npm init -y >/dev/null && npm i -s @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
           cp -r ../src www
@@ -91,7 +93,7 @@ jobs:
   ios:
     needs: [plan, build]
     if: always() && needs.plan.outputs.latest_new == 'true'
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

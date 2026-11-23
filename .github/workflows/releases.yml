@@ -1,0 +1,59 @@
+# Builds the Windows installer for every version tag (v*) that has no release yet, and publishes it.
+# Runs on every push to main, and on demand. The newest version is marked "Latest" (the in-game update check reads it).
+name: Releases
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      todo: ${{ steps.p.outputs.todo }}
+      latest: ${{ steps.p.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: p
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          tags=$(awk '{print $1}' .github/versions.txt | sort -V)
+          tags="$tags
+          v$(jq -r .version package.json)"
+          have=$(gh release list -R "$GITHUB_REPOSITORY" -L 200 --json tagName -q '.[].tagName' || true)
+          todo=$(for t in $(echo "$tags" | sort -uV); do echo "$have" | grep -qx "$t" || echo "$t"; done | jq -R . | jq -sc .)
+          echo "todo=$todo" >> "$GITHUB_OUTPUT"
+          echo "latest=$(echo "$tags" | sort -uV | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "to build: $todo"
+  build:
+    needs: plan
+    if: needs.plan.outputs.todo != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        tag: ${{ fromJSON(needs.plan.outputs.todo) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: ref
+        run: |
+          SHA=$(awk -v t='${{ matrix.tag }}' '$1==t{print $2}' .github/versions.txt); [ -z "$SHA" ] && SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"; git checkout -q "$SHA"
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci || npm install
+      - run: npm run dist
+      - name: Publish release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          T='${{ matrix.tag }}'; V="${T#v}"
+          NOTES=$(git log -1 --format=%B '${{ steps.ref.outputs.sha }}')
+          LATEST=false; [ "$T" = '${{ needs.plan.outputs.latest }}' ] && LATEST=true
+          gh release create "$T" "dist/IBRA-ZOMBIE-Setup-$V.exe" -R "$GITHUB_REPOSITORY" --title "IBRA ZOMBIE $V" --notes "صحيت لكيت الدنيا زومبي — النسخة $V
+          حمّل IBRA-ZOMBIE-Setup-$V.exe وثبّته على ويندوز.
+
+          $NOTES" --target '${{ steps.ref.outputs.sha }}' --latest=$LATEST

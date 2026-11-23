@@ -154,7 +154,7 @@ const View3D = (() => {
   function tree(x, z) { const g = new THREE.Group(); cyl(.1, .16, 1.8, 6, M('#5a4630'), 0, .9, 0, g); for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(new THREE.IcosahedronGeometry(rr(.6, 1), 1), M(['#5b7340', '#6c8249', '#4d6436'][i % 3])); s.position.set(rr(-.6, .6), rr(1.9, 2.8), rr(-.6, .6)); s.castShadow = true; g.add(s); } g.position.set(x, 0, z); scene.add(g); }
   function pole(x, z, lamp) { const g = new THREE.Group(), m = M('#4f4f4c'); box(.1, 4.2, .1, m, 0, 2.1, 0, g); if (lamp) { box(.9, .06, .08, m, .45, 4.2, 0, g); const l = box(.34, .07, .16, new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffe9c0', emissiveIntensity: 0 }), .85, 4.15, 0, g, true); lamps.push({ mesh: l, x: x + .85, z }); } else box(1, .08, .08, M('#5a4630'), 0, 3.9, 0, g); g.position.set(x, 0, z); scene.add(g); }
   function wheel(g, x, z, r = .2) { const w = cyl(r, r, .14, 10, M('#151515'), x, r, z, g); w.rotation.x = Math.PI / 2; }
-  const VMODEL = { bike: 'V01', stuta: 'V02', kia: 'V03', saipa: 'V04', truck: 'V05', wreck: 'V06' }, VLEN = { wreck: 2.15, bike: 1.35, stuta: 2.1, kia: 2.5, saipa: 2.1, truck: 3.0 }, VFLIP = {}, VM = {};
+  const VMODEL = { bike: 'V01', stuta: 'V02', kia: 'V03', saipa: 'V04', truck: 'V05', wreck: 'V06', wreck2: 'V07' }, VLEN = { wreck: 2.15, wreck2: 2.5, bike: 1.35, stuta: 2.1, kia: 2.5, saipa: 2.1, truck: 3.0 }, VFLIP = {}, VM = {};
   async function loadVModel(t) {
     const key = VMODEL[t]; if (!key || VM[t] !== undefined || !THREE.GLTFLoader) return; VM[t] = null;
     try { let buf = null;
@@ -167,11 +167,11 @@ const View3D = (() => {
       geo.computeBoundingBox(); bb = geo.boundingBox; const k = VLEN[t] / (bb.max.x - bb.min.x); geo.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2); geo.scale(k, k, k); geo.computeVertexNormals();
       const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material; mat.roughness = .7; VM[t] = { geo, mat };
       for (const o of vehs) if (o && o.key && o.key.startsWith(t)) o.key = '';
-      if (t === 'wreck' && wreckG) { while (wreckG.children.length) wreckG.remove(wreckG.children[0]); for (const p of World.props) if (p.k === 'wreck') { const c = car(p.t, 0, true); c.position.set(p.cx / 16, 0, p.cy / 16); c.rotation.y = -p.a; wreckG.add(c); } }
+      if (t.startsWith('wreck') && wreckG) { while (wreckG.children.length) wreckG.remove(wreckG.children[0]); for (const p of World.props) if (p.k === 'wreck') { const c = car(p.t, 0, true); c.position.set(p.cx / 16, 0, p.cy / 16); c.rotation.y = -p.a; wreckG.add(c); } }
     } catch (e) { console.error('vmodel', t, e); }
   }
   function car(type, armor, wreck) {
-    if (wreck && type !== 'stuta') { const V = VM.wreck; if (V) { const g = new THREE.Group(), m = new THREE.Mesh(V.geo, V.mat); m.castShadow = true; m.receiveShadow = true; g.add(m); return g; } loadVModel('wreck'); }
+    if (wreck && type !== 'stuta') { const wk = type === 'kia' ? 'wreck2' : 'wreck', V = VM[wk]; if (V) { const g = new THREE.Group(), m = new THREE.Mesh(V.geo, V.mat); m.castShadow = true; m.receiveShadow = true; g.add(m); return g; } loadVModel(wk); }
     if (!wreck && VMODEL[type]) { const V = VM[type]; if (V) { const g = new THREE.Group(), m = new THREE.Mesh(V.geo, V.mat); m.castShadow = true; m.receiveShadow = true; g.add(m); if (armor) { const am = M('#3d4232', { metalness: .5 }); box(VLEN[type] * .7, .35, .04, am, 0, .55, .5, g); box(VLEN[type] * .7, .35, .04, am, 0, .55, -.5, g); } return g; } loadVModel(type); }
     const g = new THREE.Group(), cols = { kia: '#d9d8d2', saipa: '#c9a02a', stuta: '#2d5f8f', truck: '#55683a', bike: '#a8322a' }, c = new THREE.Color(cols[type] || '#999999'); if (wreck) c.lerp(new THREE.Color('#6b4a30'), .55);
     const bm = new THREE.MeshStandardMaterial({ color: c, roughness: wreck ? 1 : .5, metalness: wreck ? 0 : .3 }), glass = wreck ? bm : M('#27333b', { roughness: .25 });

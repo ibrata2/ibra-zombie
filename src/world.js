@@ -136,9 +136,9 @@ const World = (() => {
     Object.assign(spots, {
       pipe: sp(23, 53), hassan: sp(18, 53), bike: { x: 28 * 16, y: 55 * 16 + 8 }, aj: sp(52, 53), kia: { x: 50 * 16, y: 55 * 16 },
       fuelWreck: { x: 43 * 16, y: 54 * 16 + 8 }, stuta: { x: 64 * 16, y: 56 * 16 + 8 }, haji: sp(84, 53), saif: sp(110, 58), umali: sp(30, 53),
-      saipa: { x: 131 * 16, y: 54 * 16 + 10 }, jeep: { x: 113 * 16, y: 55 * 16 + 8 }, saipa2: { x: 66 * 16, y: 54 * 16 + 10 }, sedan: { x: 146 * 16, y: 54 * 16 + 10 }, ecar: { x: 40 * 16, y: 20 * 16 + 10 }, colonel: sp(144, 56), cops: sp(101, 55), shovel: sp(108, 53)
+      saipa: { x: 131 * 16, y: 54 * 16 + 10 }, jeep: { x: 113 * 16, y: 55 * 16 + 8 }, saipa2: { x: 66 * 16, y: 54 * 16 + 10 }, sedan: { x: 146 * 16, y: 54 * 16 + 10 }, ecar: { x: 40 * 16, y: 20 * 16 + 10 }, silver: { x: 92 * 16, y: 90 * 16 + 10 }, oldblue: { x: 128 * 16, y: 20 * 16 + 10 }, colonel: sp(144, 56), cops: sp(101, 55), shovel: sp(108, 53)
     });
-    for (const k of ['jeep', 'saipa2', 'sedan', 'ecar', 'pipe', 'hassan', 'bike', 'aj', 'kia', 'fuelWreck', 'stuta', 'haji', 'saif', 'umali', 'saipa', 'colonel', 'cops', 'shovel', 'boss', 'truck', 'sol']) kp(spots[k].x >> 4, spots[k].y >> 4, 2);
+    for (const k of ['jeep', 'saipa2', 'sedan', 'ecar', 'silver', 'oldblue', 'pipe', 'hassan', 'bike', 'aj', 'kia', 'fuelWreck', 'stuta', 'haji', 'saif', 'umali', 'saipa', 'colonel', 'cops', 'shovel', 'boss', 'truck', 'sol']) kp(spots[k].x >> 4, spots[k].y >> 4, 2);
     pickups.push({ id: 'pipe', w: 'pipe', x: spots.pipe.x, y: spots.pipe.y, b: 0 }, { id: 'shovel', w: 'bat', x: spots.shovel.x, y: spots.shovel.y, b: 0 });
     pickups.push({ id: 'page0', page: 0, x: 3 * 16 + 8, y: 19 * 16 + 8, b: 0 }, { id: 'page1', page: 1, x: 100 * 16 + 8, y: 92 * 16 + 8, b: 0 }, { id: 'page3', page: 3, x: 174 * 16 + 8, y: 19 * 16 + 8, b: 0 });
     props.push({ k: 'gen', x: 25 * 16 + 8, y: 53 * 16 + 12, v: 0 }); block[I(25, 53)] = 1;

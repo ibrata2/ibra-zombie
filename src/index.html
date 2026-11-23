@@ -40,7 +40,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold)}
 #clock b{display:block;color:var(--gold2);font-size:26px}
 #clock span{font-size:20px}
 #clock i{display:block;font-style:normal;font-size:16px;color:#a9a493}
-#mini{position:absolute;top:108px;inset-inline-end:12px;width:260px;height:130px;image-rendering:pixelated;border:2px solid #000;outline:2px solid var(--line);opacity:.92}
+#mini{position:absolute;top:104px;inset-inline-end:12px;width:210px;height:210px;border-radius:50%;opacity:.95;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6))}
 #obj{position:absolute;top:12px;left:50%;transform:translateX(-50%);max-width:46%;background:rgba(10,10,14,.72);border:2px solid #000;outline:2px solid var(--gold);padding:5px 16px;text-align:center;font-size:21px;line-height:1.15}
 #obj small{display:block;color:var(--gold2);font-size:15px;letter-spacing:1px}
 #wep{position:absolute;bottom:12px;inset-inline-start:12px;background:rgba(10,10,14,.72);border:2px solid #000;outline:2px solid var(--line);padding:6px 14px;font-size:21px;line-height:1.15;min-width:150px}
@@ -118,7 +118,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold)}
   </div>
   <div id="obj"><small></small><span></span></div>
   <div id="clock"><b></b><span></span><i></i></div>
-  <canvas id="mini" width="448" height="224"></canvas>
+  <canvas id="mini" width="420" height="420"></canvas>
   <div id="wep"><b></b><i></i></div>
   <div id="comps" hidden></div>
   <div id="toasts"></div>

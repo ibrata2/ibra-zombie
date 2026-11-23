@@ -3,7 +3,7 @@
 const World = (() => {
   const W = 224, H = 112, N = W * H;
   const tiles = new Uint8Array(N), wst = new Uint8Array(N), block = new Uint8Array(N), bidx = new Int16Array(N), safe = new Uint8Array(N), keep = new Uint8Array(N);
-  const I = (x, y) => y * W + x;
+  const I = (x, y) => y * W + x, World_I = I;
   // 0 dirt 1 road 2 walk 3 floor 4 wall 5 water 6 bridge 7 barrier 8 grass 9 shopfloor 10 fence 11 gate 12 door 13 locked
   const SOL = [0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1];
   const buildings = [], containers = [], props = [], inner = [], wires = [], pickups = [], spots = {}, locks = {}, gates = {};
@@ -103,6 +103,7 @@ const World = (() => {
     inn(b, 'bigen', 132, 50); block[I(131, 50)] = 1; spots.mallGen = sp(132, 50);
     inn(b, 'bench', 132, 46); spots.mallBench = sp(132, 46);
     spots.noor = sp(128, 43); spots.mur = sp(130, 48); spots.cat = sp(122, 46);
+    b = addB(138, 35, 12, 18, 'S', 'hospital', 1, 143); b.dw = 2; tiles[World_I(144, 52)] = 12; spots.hospDoor = sp(143, 53); kp(143, 53, 2); kp(144, 53, 2);
     b = addB(120, 59, 8, 7, 'N', 'pharmacy', 1); spots.pharm = cont(b, 'med', 122, 64, 'medicine'); cont(b, 'med', 125, 64);
     b = addB(139, 59, 10, 8, 'N', 'police', 2); locks.police = { tx: 144, ty: 59, n: 1 }; spots.policeDoor = sp(144, 58);
     cont(b, 'locker', 141, 65, 'pistol'); cont(b, 'locker', 146, 65, 'policeammo'); cont(b, 'desk', 143, 65);

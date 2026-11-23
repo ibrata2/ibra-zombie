@@ -1149,10 +1149,7 @@ function hud() {
   const cb = $('#comps'), list = COMPS.filter(here); cb.hidden = !list.length;
   if (list.length) { cb.innerHTML = ''; for (const id of list) { const d = el('div'), t = comp(id).trust; d.append(el('span', L(NPC[id].n) + (comp(id).st === 'home' ? tr(' (بالملجأ)', ' (home)') : '')), el('em', Math.round(t) + '%', t < 25 ? 'bad' : '')); cb.appendChild(d); } }
   // minimap
-  const mc = $('#mini'), mx = mc.getContext('2d'); mx.imageSmoothingEnabled = false; mx.drawImage(R.mini, 0, 0, mc.width, mc.height); const ms = mc.width / World.W / 16, dot = (o, c, r) => { mx.fillStyle = '#000'; mx.fillRect(o.x * ms - r - 1, o.y * ms - r - 1, r * 2 + 2, r * 2 + 2); mx.fillStyle = c; mx.fillRect(o.x * ms - r, o.y * ms - r, r * 2, r * 2); };
-  for (const k in World.gates) if (!World.gates[k].open) { mx.fillStyle = '#e3b62f'; mx.fillRect(World.gates[k].x * 16 * ms - 1, 52 * 16 * ms, 3, 8 * 16 * ms); }
-  for (const st of G.strand) dot(st, '#7fe07f', 3);
-  G.veh.forEach(v => !v.gone && dot(v, '#6cc4ff', 2)); if (R.objT && Math.sin(R.t * 6) > -.4) dot(R.objT, '#ffe27a', 4); dot(G, '#fff', 3); dot(G, '#d24a3a', 1.5);
+  drawRadar();
   // nearest food / water when running low and the bag has none
   R.needT = null; const lowW = G.water < 38 && !has('water') && !has('tea'), lowF = G.food < 38 && !FOODS.some(x => has(x)) && !has('dolma');
   if (lowW || lowF) { const lim = (G.flags.g4 ? 999 : G.flags.g3 ? 177 : G.flags.g2 ? 150 : G.flags.g1 ? 104 : 56) * 16; let bd = 1e9; for (const c of World.containers) { if (G.looted[c.id] || c.x > lim || (c.kind !== 'fridge' && c.kind !== 'shelf')) continue; const d = hyp(c.x - G.x, c.y - G.y); if (d < bd) { bd = d; R.needT = c; } } if (R.needT) R.needT = { x: R.needT.x, y: R.needT.y, label: lowW ? tr('أقرب ماي وأكل', 'Nearest water & food') : tr('أقرب أكل', 'Nearest food') }; }
@@ -1363,6 +1360,7 @@ Object.assign(ZLINES, {
 
 // ---------------------------------------------------------------- setup per world build
 function setupLife() {
+  G.conv = {}; { const hb = World.buildings.find(b => b.type === 'hospital'); if (hb) G.conv.hosp = hb.i; }
   for (const k of ['hosp', 'camp', 'water', 'fuel']) if (G.conv[k] == null) { const i = pickConv(k); if (i >= 0) G.conv[k] = i; }
   const m = mallB(), pin = (b, off) => { const y = b.door === 'S' ? b.dy - 1 : b.dy + 1; return World.freeNear((b.dx + off) * 16 + 8, y * 16 + 8); };
   S.padMH = World.freeNear(128 * 16 + 8, 50 * 16 + 8); S.padMC = World.freeNear(130 * 16 + 8, 50 * 16 + 8); S.padMW = World.freeNear(132 * 16 + 8, 50 * 16 + 8); S.padMF = World.freeNear(132 * 16 + 8, 47 * 16 + 8);
@@ -1660,6 +1658,31 @@ function lifeTick(dt) {
   if (!atHome()) { updDistNpcs(dt); return; }
   if ((R.lt = (R.lt || 0) - dt) <= 0) { R.lt = 1; misTick(); lifeSide(); lifeStations(); }
   if (R.aliScene && R.busy === 0 && !R.nexting) aliScene();
+}
+
+// ---------------------------------------------------------------- side map: a local radar that turns with the camera
+function drawRadar() {
+  const mc = $('#mini'); if (!mc || !R.mini) return; const mx = mc.getContext('2d'), Wd = mc.width, C = Wd / 2, rad = 46 * 16, sc = (C - 6) / rad, yaw = View3D.yaw ? View3D.yaw() : 0, cs = Math.cos(yaw), sn = Math.sin(yaw);
+  const P = o => { const dx = o.x - G.x, dy = o.y - G.y; return { x: C + (dx * cs - dy * sn) * sc, y: C + (dx * sn + dy * cs) * sc, d: hyp(dx, dy) }; };
+  mx.setTransform(1, 0, 0, 1, 0, 0); mx.clearRect(0, 0, Wd, Wd); mx.save(); mx.beginPath(); mx.arc(C, C, C - 3, 0, Math.PI * 2); mx.clip(); mx.fillStyle = '#14130f'; mx.fillRect(0, 0, Wd, Wd);
+  const k = 16 * sc; mx.imageSmoothingEnabled = false; mx.setTransform(cs * k, sn * k, -sn * k, cs * k, C, C); mx.drawImage(R.mini, -G.x / 16, -G.y / 16); mx.setTransform(1, 0, 0, 1, 0, 0);
+  const g = mx.createRadialGradient(C, C, C * .55, C, C, C); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.55)'); mx.fillStyle = g; mx.fillRect(0, 0, Wd, Wd);
+  const dot = (o, c, r) => { const q = P(o); if (q.d > rad) return; mx.fillStyle = '#000'; mx.beginPath(); mx.arc(q.x, q.y, r + 1.5, 0, 6.3); mx.fill(); mx.fillStyle = c; mx.beginPath(); mx.arc(q.x, q.y, r, 0, 6.3); mx.fill(); };
+  for (const z of R.zombies) if (Math.abs(z.x - G.x) < rad && Math.abs(z.y - G.y) < rad) dot(z, z.type === 'giant' || z.type === 'boss' ? '#ff3b2f' : '#c84a3a', z.type === 'giant' || z.type === 'boss' ? 7 : 3);
+  for (const n of R.npcs) if (!n.hidden) dot(n, n.follow ? '#6cc4ff' : n.worker || n.poster || n.dw ? '#9fe08a' : '#e8cf7a', 4);
+  for (const st of G.strand || []) dot(st, '#7fe07f', 6);
+  G.veh.forEach(v => { if (v.gone || (v.map || 'home') !== (G.map || 'home')) return; const q = P(v); if (q.d > rad) return; mx.fillStyle = '#000'; mx.fillRect(q.x - 7, q.y - 7, 14, 14); mx.fillStyle = '#6cc4ff'; mx.fillRect(q.x - 5, q.y - 5, 10, 10); });
+  mx.font = '700 19px Handjet, Tahoma, sans-serif'; mx.textAlign = 'center'; mx.textBaseline = 'middle'; mx.direction = LANG === 'ar' ? 'rtl' : 'ltr';
+  for (const l of R.labels || []) { const q = P(l); if (q.d > rad * .92) continue; const t = L(l.t), tw = mx.measureText(t).width + 10; mx.fillStyle = 'rgba(8,8,12,.78)'; mx.fillRect(q.x - tw / 2, q.y - 11, tw, 22); mx.fillStyle = l.c; mx.fillText(t, q.x, q.y + 1); }
+  const mark = (o, col, sz) => { if (!o) return; let q = P(o); if (q.d > rad * .93) { const a = Math.atan2(q.y - C, q.x - C), r = C - 16; q = { x: C + Math.cos(a) * r, y: C + Math.sin(a) * r }; mx.save(); mx.translate(q.x, q.y); mx.rotate(a); mx.fillStyle = '#000'; mx.beginPath(); mx.moveTo(14, 0); mx.lineTo(-8, -11); mx.lineTo(-8, 11); mx.fill(); mx.fillStyle = col; mx.beginPath(); mx.moveTo(10, 0); mx.lineTo(-5, -7); mx.lineTo(-5, 7); mx.fill(); mx.restore(); return; }
+    const pulse = sz + Math.sin(R.t * 6) * 2; mx.fillStyle = '#000'; mx.beginPath(); mx.moveTo(q.x, q.y - pulse - 3); mx.lineTo(q.x + pulse + 3, q.y); mx.lineTo(q.x, q.y + pulse + 3); mx.lineTo(q.x - pulse - 3, q.y); mx.fill(); mx.fillStyle = col; mx.beginPath(); mx.moveTo(q.x, q.y - pulse); mx.lineTo(q.x + pulse, q.y); mx.lineTo(q.x, q.y + pulse); mx.lineTo(q.x - pulse, q.y); mx.fill(); };
+  mark(R.needT, '#6cc4ff', 7); mark(R.side, '#ff9ad0', 8); mark(R.objT, '#ffe27a', 10);
+  // the player: arrow facing the walking direction
+  const fv = [[0, 1], [-1, 0], [1, 0], [0, -1]][G.dir || 0], fa = Math.atan2(fv[0] * sn + fv[1] * cs, fv[0] * cs - fv[1] * sn);
+  mx.save(); mx.translate(C, C); mx.rotate(fa); mx.fillStyle = '#000'; mx.beginPath(); mx.moveTo(17, 0); mx.lineTo(-11, -13); mx.lineTo(-5, 0); mx.lineTo(-11, 13); mx.fill(); mx.fillStyle = '#fff'; mx.beginPath(); mx.moveTo(13, 0); mx.lineTo(-8, -9); mx.lineTo(-3, 0); mx.lineTo(-8, 9); mx.fill(); mx.restore();
+  mx.restore();
+  mx.lineWidth = 5; mx.strokeStyle = '#000'; mx.beginPath(); mx.arc(C, C, C - 3, 0, 6.3); mx.stroke(); mx.lineWidth = 3; mx.strokeStyle = '#c9a84c'; mx.beginPath(); mx.arc(C, C, C - 4, 0, 6.3); mx.stroke();
+  { const q = P({ x: G.x, y: G.y - 9999 }), a = Math.atan2(q.y - C, q.x - C), r = C - 15, x = C + Math.cos(a) * r, y = C + Math.sin(a) * r; mx.fillStyle = '#000'; mx.beginPath(); mx.arc(x, y, 13, 0, 6.3); mx.fill(); mx.fillStyle = '#e8cf7a'; mx.font = '700 18px Handjet, Tahoma'; mx.fillText(LANG === 'ar' ? 'ش' : 'N', x, y + 1); }
 }
 
 // ---------------------------------------------------------------- loot on zombies, money, gear, item icons

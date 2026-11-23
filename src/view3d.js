@@ -149,7 +149,7 @@ const View3D = (() => {
   function tree(x, z) { const g = new THREE.Group(); cyl(.1, .16, 1.8, 6, M('#5a4630'), 0, .9, 0, g); for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(new THREE.IcosahedronGeometry(rr(.6, 1), 1), M(['#5b7340', '#6c8249', '#4d6436'][i % 3])); s.position.set(rr(-.6, .6), rr(1.9, 2.8), rr(-.6, .6)); s.castShadow = true; g.add(s); } g.position.set(x, 0, z); scene.add(g); }
   function pole(x, z, lamp) { const g = new THREE.Group(), m = M('#4f4f4c'); box(.1, 4.2, .1, m, 0, 2.1, 0, g); if (lamp) { box(.9, .06, .08, m, .45, 4.2, 0, g); const l = box(.34, .07, .16, new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffe9c0', emissiveIntensity: 0 }), .85, 4.15, 0, g, true); lamps.push({ mesh: l, x: x + .85, z }); } else box(1, .08, .08, M('#5a4630'), 0, 3.9, 0, g); g.position.set(x, 0, z); scene.add(g); }
   function wheel(g, x, z, r = .2) { const w = cyl(r, r, .14, 10, M('#151515'), x, r, z, g); w.rotation.x = Math.PI / 2; }
-  const VMODEL = { bike: 'V01' }, VLEN = { bike: 1.35, stuta: 2.1, kia: 2.5, saipa: 2.1, truck: 3.0 }, VFLIP = {}, VM = {};
+  const VMODEL = { bike: 'V01', kia: 'V03' }, VLEN = { bike: 1.35, stuta: 2.1, kia: 2.5, saipa: 2.1, truck: 3.0 }, VFLIP = {}, VM = {};
   async function loadVModel(t) {
     const key = VMODEL[t]; if (!key || VM[t] !== undefined || !THREE.GLTFLoader) return; VM[t] = null;
     try { let buf = null;

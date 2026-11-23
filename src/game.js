@@ -42,6 +42,9 @@ const VEH = {
   stuta: { n: ['ستوتة', 'Stuta trike'], sp: 138, acc: 150, turn: 3.6, r: 6, seats: 3, tank: 40, hp: 80, use: .02 },
   kia: { n: ['كيا حمل', 'Kia pickup'], sp: 168, acc: 150, turn: 3.2, r: 7, seats: 6, tank: 80, hp: 160, use: .028 },
   saipa: { n: ['سايبا', 'Saipa'], sp: 198, acc: 190, turn: 3.6, r: 6, seats: 4, tank: 60, hp: 120, use: .024 },
+  jeep: { n: ['جيب أصفر', 'Yellow 4x4'], sp: 192, acc: 175, turn: 3.3, r: 7, seats: 5, tank: 70, hp: 200, use: .032 },
+  saipa2: { n: ['سايبا صفرة', 'Yellow Saipa'], sp: 205, acc: 195, turn: 3.7, r: 6, seats: 4, tank: 55, hp: 115, use: .022 },
+  sedan: { n: ['سيارة صفرة', 'Yellow sedan'], sp: 215, acc: 200, turn: 3.6, r: 6, seats: 4, tank: 60, hp: 120, use: .024 },
   truck: { n: ['جكسارة مدرّعة', 'Armored truck'], sp: 158, acc: 120, turn: 2.8, r: 8, seats: 9, tank: 120, hp: 400, use: .04 }
 };
 const NPC = {
@@ -232,7 +235,7 @@ function save(auto) {
 }
 function blank(name) {
   const comps = {}; for (const id of COMPS) comps[id] = { st: 'none', trust: 50, joinDay: 0, asked: 0 };
-  const veh = [['bike', 'bike', 0], ['stuta', 'stuta', 0], ['kia', 'kia', 0], ['saipa', 'saipa', 0], ['truck', 'truck', 70]].map(([t, s, f]) => ({ t, x: S[s].x, y: S[s].y, a: 0, sp: 0, fuel: f, hp: VEH[t].hp, up: { armor: 0, tank: 0, horn: 0, seats: 0 } }));
+  const veh = [['bike', 'bike', 0], ['stuta', 'stuta', 0], ['kia', 'kia', 0], ['saipa', 'saipa', 0], ['truck', 'truck', 70], ['jeep', 'jeep', 22], ['saipa2', 'saipa2', 18], ['sedan', 'sedan', 15]].map(([t, s, f]) => ({ t, x: S[s].x, y: S[s].y, a: 0, sp: 0, fuel: f, hp: VEH[t].hp, up: { armor: 0, tank: 0, horn: 0, seats: 0 } }));
   return { v: 1, name, day: 1, time: 6.4, x: S.start.x, y: S.start.y, dir: 0, fr: 0, hp: 100, food: 72, water: 72, en: 100, inv: {}, weps: {}, cur: 'fist', flags: {}, looted: {}, lootN: 0, floor: 0, flr: 1, stash: {}, dis: {}, fac: { fuel: 0, food: 0, water: 0, med: 0, arms: 0 }, links: {}, conv: {}, fort: {}, prod: {}, mis: null, crops: 0, map: 'home', dist: {}, lootedBy: {}, disBy: {}, gear: {}, strand: [], col: { pop: 0, bodies: 0, hurt: 0, trainee: 0, jobs: { guard: 0, farm: 0, scav: 0, doc: 0, soldier: 0, medic: 0, cook: 0, water: 0, fuel: 0, pharm: 0, smith: 0, collector: 0 }, bDay: 0, research: 0, horde: 0 }, pages: [], taken: {}, kills: 0, dayKills: 0, comps, veh, inVeh: -1, lastVeh: -1, shel: {}, safe: { x: S.start.x, y: S.start.y }, zoom: 3, deaths: 0 };
 }
 function enterWorld() {
@@ -256,7 +259,7 @@ async function startNew(name, skipIntro) {
   save(true);
 }
 function loadGame(name) {
-  try { const g = JSON.parse(localStorage.getItem('ibz_save_' + name)); if (!g) return false; const b = blank(name); G = Object.assign(b, g); for (const id of COMPS) if (!G.comps[id]) G.comps[id] = b.comps[id]; G.col.jobs = Object.assign({ soldier: 0, medic: 0, cook: 0, water: 0, fuel: 0, pharm: 0, smith: 0, collector: 0 }, G.col.jobs); G.dist = G.dist || {}; G.map = G.map || 'home'; G.col.trainee = G.col.trainee || 0; G.conv = G.conv || {}; if (!g.fort) { G.fort = {}; if (G.conv.hosp != null) G.fort.hosp = 1; if (G.conv.camp != null) G.fort.camp = 1; } G.prod = G.prod || {}; G.strand = G.strand || []; enterWorld(); toast(tr('هلا بيك من جديد، ', 'Welcome back, ') + name); return true; } catch (e) { return false; }
+  try { const g = JSON.parse(localStorage.getItem('ibz_save_' + name)); if (!g) return false; const b = blank(name); G = Object.assign(b, g); for (let i = G.veh.length; i < b.veh.length; i++) G.veh.push(b.veh[i]); for (const id of COMPS) if (!G.comps[id]) G.comps[id] = b.comps[id]; G.col.jobs = Object.assign({ soldier: 0, medic: 0, cook: 0, water: 0, fuel: 0, pharm: 0, smith: 0, collector: 0 }, G.col.jobs); G.dist = G.dist || {}; G.map = G.map || 'home'; G.col.trainee = G.col.trainee || 0; G.conv = G.conv || {}; if (!g.fort) { G.fort = {}; if (G.conv.hosp != null) G.fort.hosp = 1; if (G.conv.camp != null) G.fort.camp = 1; } G.prod = G.prod || {}; G.strand = G.strand || []; enterWorld(); toast(tr('هلا بيك من جديد، ', 'Welcome back, ') + name); return true; } catch (e) { return false; }
 }
 
 // ---------------------------------------------------------------- npcs & objects
